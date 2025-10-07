@@ -27,7 +27,7 @@ const COLORS = {
 };
 
 const gameState = {
-  lives: 3,
+  lives: 10,
   score: 0,
   highScore: Number(localStorage.getItem('froggerHighScore') || '0'),
   running: true,
@@ -455,11 +455,11 @@ function gameClear() {
 }
 
 function restart() {
-  gameState.lives = 3;
+  gameState.lives = 10;
   gameState.score = 0;
   gameState.stage = 'month';
   hud.stage.textContent = '월 선택';
-  hud.lives.textContent = '3';
+  hud.lives.textContent = '10';
   hud.score.textContent = '0';
   gameState.running = true;
   hud.restart.classList.add('hidden');
