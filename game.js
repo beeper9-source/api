@@ -1,13 +1,22 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-const TILE = 32;
-const COLS = canvas.width / TILE;   // 14
-const ROWS = canvas.height / TILE;  // 16
+let TILE = 32;
+let COLS = 14;
+let ROWS = 16;
 
 const LANE_START = 3;   // 첫 도로/물길 시작 행 (위에서부터)
 const LANE_END = 12;    // 마지막 도로/물길 행
 const HOME_ROW = 1;     // 연못 목표 행
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // 종횡비를 유지하기 위해 14x16 격자를 기준으로 타일 크기 결정
+  TILE = Math.floor(Math.min(canvas.width / COLS, canvas.height / ROWS));
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 const COLORS = {
   background: '#10162f',
@@ -154,9 +163,36 @@ class Frog {
     }
   }
   draw() {
+    // 개구리 아이콘 (몸통 + 머리 + 눈)
+    const r = TILE * 0.35;
+    const eyeR = r * 0.22;
+    const eyeOffX = r * 0.5;
+    const eyeOffY = -r * 0.5;
+
+    // 몸통(타원)
     ctx.fillStyle = COLORS.frog;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, TILE * 0.35, 0, Math.PI * 2);
+    ctx.ellipse(this.x, this.y, r * 1.0, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 머리(반원)
+    ctx.beginPath();
+    ctx.arc(this.x, this.y - r * 0.4, r * 0.75, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 눈(흰자)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(this.x - eyeOffX, this.y + eyeOffY, eyeR, 0, Math.PI * 2);
+    ctx.arc(this.x + eyeOffX, this.y + eyeOffY, eyeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 눈동자
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(this.x - eyeOffX, this.y + eyeOffY, eyeR * 0.45, 0, Math.PI * 2);
+    ctx.arc(this.x + eyeOffX, this.y + eyeOffY, eyeR * 0.45, 0, Math.PI * 2);
     ctx.fill();
   }
 }
