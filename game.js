@@ -31,6 +31,7 @@ const gameState = {
   score: 0,
   highScore: Number(localStorage.getItem('froggerHighScore') || '0'),
   running: true,
+  stage: 'month', // 'month' -> 'day'
 };
 
 const hud = {
@@ -39,6 +40,7 @@ const hud = {
   high: document.getElementById('highScore'),
   restart: document.getElementById('restart'),
   mute: document.getElementById('mute'),
+  stage: document.getElementById('stage'),
 };
 // ---- Audio ----
 class Sound {
@@ -118,6 +120,7 @@ const sound = new Sound();
 
 
 hud.high.textContent = gameState.highScore.toString();
+hud.stage.textContent = '월 선택';
 
 class Frog {
   constructor() {
@@ -262,6 +265,9 @@ function drawBackground() {
   ctx.fillStyle = COLORS.water;
   ctx.fillRect(0, 0, canvas.width, TILE * 2);
 
+  // 상단 집 슬롯(스테이지별 표시)
+  drawHomeSlots();
+
   // 물길
   ctx.fillStyle = COLORS.water;
   ctx.fillRect(0, TILE * 3, canvas.width, TILE * 4);
@@ -273,6 +279,30 @@ function drawBackground() {
   // 하단 잔디
   ctx.fillStyle = COLORS.grass;
   ctx.fillRect(0, TILE * 11, canvas.width, TILE * 5);
+}
+
+function drawHomeSlots() {
+  const slots = gameState.stage === 'month' ? 12 : 11; // days 10~20 inclusive -> 11
+  const labels = [];
+  if (gameState.stage === 'month') {
+    for (let m = 1; m <= 12; m++) labels.push(`${m}월`);
+  } else {
+    for (let d = 10; d <= 20; d++) labels.push(`${d}일`);
+  }
+  const y = TILE * 1.0;
+  const margin = TILE * 0.5;
+  const slotW = (canvas.width - margin * 2) / slots;
+  const slotH = TILE * 1.4;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.floor(TILE * 0.5)}px sans-serif`;
+  for (let i = 0; i < slots; i++) {
+    const x = margin + slotW * i + slotW / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(x - slotW / 2 + 4, y - slotH / 2, slotW - 8, slotH);
+    ctx.fillStyle = COLORS.text;
+    ctx.fillText(labels[i], x, y);
+  }
 }
 
 function aabb(x, y, w, h, px, py, pr) {
@@ -327,10 +357,37 @@ function update(dt) {
 
   // 목표 도달(연못)
   if (frog.row <= HOME_ROW) {
-    gameState.score += 100;
-    hud.score.textContent = gameState.score.toString();
-    sound.score();
-    frog.reset();
+    // 스테이지 로직: 월 -> 일
+    if (gameState.stage === 'month') {
+      // 12개 슬롯(1~12월)에 14칸 격자를 매핑
+      const mappedMonth = Math.max(0, Math.min(11, Math.round((frog.col / (COLS - 1)) * 11)));
+      const correct = 10; // 11월은 0-based index 10
+      if (mappedMonth === correct) {
+        gameState.score += 100;
+        hud.score.textContent = gameState.score.toString();
+        sound.score();
+        gameState.stage = 'day';
+        hud.stage.textContent = '일 선택';
+      } else {
+        sound.die();
+        frog.die();
+      }
+      frog.reset();
+    } else {
+      // day: 10~20 -> index 0..10, 정답 16일 -> index 6
+      const correct = 6;
+      const mappedIndex = Math.max(0, Math.min(10, Math.round((frog.col / (COLS - 1)) * 10)));
+      if (mappedIndex === correct) {
+        gameState.score += 300;
+        hud.score.textContent = gameState.score.toString();
+        sound.score();
+        gameClear();
+      } else {
+        sound.die();
+        frog.die();
+        frog.reset();
+      }
+    }
   }
 
   frog.update(dt);
@@ -381,9 +438,27 @@ function gameOver() {
   ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 12);
 }
 
+function gameClear() {
+  gameState.running = false;
+  hud.restart.classList.remove('hidden');
+  // 오버레이 메시지
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = COLORS.text;
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('정답! 알함브라기타앙상블 연주회', canvas.width / 2, canvas.height / 2 - 24);
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText('11월 16일', canvas.width / 2, canvas.height / 2 + 6);
+  ctx.font = '14px sans-serif';
+  ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 34);
+}
+
 function restart() {
   gameState.lives = 3;
   gameState.score = 0;
+  gameState.stage = 'month';
+  hud.stage.textContent = '월 선택';
   hud.lives.textContent = '3';
   hud.score.textContent = '0';
   gameState.running = true;
