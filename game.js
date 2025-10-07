@@ -32,6 +32,7 @@ const gameState = {
   highScore: Number(localStorage.getItem('froggerHighScore') || '0'),
   running: true,
   stage: 'month', // 'month' -> 'day'
+  overlay: null, // null | 'over' | 'clear'
 };
 
 const hud = {
@@ -435,6 +436,32 @@ function draw() {
   }
 
   frog.draw();
+
+  // Overlay (persistent)
+  if (gameState.overlay === 'over') {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = COLORS.text;
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('게임 오버', canvas.width / 2, canvas.height / 2 - 12);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 12);
+  } else if (gameState.overlay === 'clear') {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = COLORS.text;
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('정답! 알함브라기타앙상블 연주회', canvas.width / 2, canvas.height / 2 - 24);
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('11월 16일', canvas.width / 2, canvas.height / 2 + 6);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 34);
+    ctx.font = '15px sans-serif';
+    ctx.fillText('연주회 날짜 맞추셨어요. 미션을 완료하신 분은', canvas.width / 2, canvas.height / 2 + 70);
+    ctx.fillText('단톡방에 "가을단풍이 빨갛네요"라고 올려주세요', canvas.width / 2, canvas.height / 2 + 92);
+  }
 }
 
 let last = 0;
@@ -448,39 +475,17 @@ function loop(ts) {
 
 function gameOver() {
   gameState.running = false;
+  gameState.overlay = 'over';
   hud.restart.classList.remove('hidden');
   gameState.highScore = Math.max(gameState.highScore, gameState.score);
   localStorage.setItem('froggerHighScore', gameState.highScore.toString());
   hud.high.textContent = gameState.highScore.toString();
-  // 중앙 메시지
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = COLORS.text;
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText('게임 오버', canvas.width / 2, canvas.height / 2 - 12);
-  ctx.font = '14px sans-serif';
-  ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 12);
 }
 
 function gameClear() {
   gameState.running = false;
+  gameState.overlay = 'clear';
   hud.restart.classList.remove('hidden');
-  // 오버레이 메시지
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = COLORS.text;
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText('정답! 알함브라기타앙상블 연주회', canvas.width / 2, canvas.height / 2 - 24);
-  ctx.font = 'bold 22px sans-serif';
-  ctx.fillText('11월 16일', canvas.width / 2, canvas.height / 2 + 6);
-  ctx.font = '14px sans-serif';
-  ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 34);
-  // 미션 완료 안내 메시지
-  ctx.font = '15px sans-serif';
-  ctx.fillText('연주회 날짜 맞추셨어요. 미션을 완료하신 분은', canvas.width / 2, canvas.height / 2 + 70);
-  ctx.fillText('단톡방에 "가을단풍이 빨갛네요"라고 올려주세요', canvas.width / 2, canvas.height / 2 + 92);
 }
 
 function restart() {
@@ -491,6 +496,7 @@ function restart() {
   hud.lives.textContent = '10';
   hud.score.textContent = '0';
   gameState.running = true;
+  gameState.overlay = null;
   hud.restart.classList.add('hidden');
   frog.reset();
   sound.resumeIfSuspended().then(() => sound.startBgm());
