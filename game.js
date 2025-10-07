@@ -281,18 +281,23 @@ function drawBackground() {
   ctx.fillRect(0, TILE * 11, canvas.width, TILE * 5);
 }
 
-function drawHomeSlots() {
+function getHomeSlotConfig() {
   const slots = gameState.stage === 'month' ? 12 : 11; // days 10~20 inclusive -> 11
+  const margin = TILE * 0.5;
+  const slotW = (canvas.width - margin * 2) / slots;
+  const slotH = TILE * 1.4;
+  const y = TILE * 1.0;
+  return { slots, margin, slotW, slotH, y };
+}
+
+function drawHomeSlots() {
+  const { slots, margin, slotW, slotH, y } = getHomeSlotConfig();
   const labels = [];
   if (gameState.stage === 'month') {
     for (let m = 1; m <= 12; m++) labels.push(`${m}월`);
   } else {
     for (let d = 10; d <= 20; d++) labels.push(`${d}일`);
   }
-  const y = TILE * 1.0;
-  const margin = TILE * 0.5;
-  const slotW = (canvas.width - margin * 2) / slots;
-  const slotH = TILE * 1.4;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `${Math.floor(TILE * 0.5)}px sans-serif`;
@@ -303,6 +308,13 @@ function drawHomeSlots() {
     ctx.fillStyle = COLORS.text;
     ctx.fillText(labels[i], x, y);
   }
+}
+
+function getSelectedHomeIndex(frogX) {
+  const { slots, margin, slotW } = getHomeSlotConfig();
+  const idx = Math.floor((frogX - margin) / slotW);
+  if (idx < 0 || idx >= slots) return -1;
+  return idx;
 }
 
 function aabb(x, y, w, h, px, py, pr) {
@@ -359,10 +371,9 @@ function update(dt) {
   if (frog.row <= HOME_ROW) {
     // 스테이지 로직: 월 -> 일
     if (gameState.stage === 'month') {
-      // 12개 슬롯(1~12월)에 14칸 격자를 매핑
-      const mappedMonth = Math.max(0, Math.min(11, Math.round((frog.col / (COLS - 1)) * 11)));
+      const idx = getSelectedHomeIndex(frog.x);
       const correct = 10; // 11월은 0-based index 10
-      if (mappedMonth === correct) {
+      if (idx === correct) {
         gameState.score += 100;
         hud.score.textContent = gameState.score.toString();
         sound.score();
@@ -376,8 +387,8 @@ function update(dt) {
     } else {
       // day: 10~20 -> index 0..10, 정답 16일 -> index 6
       const correct = 6;
-      const mappedIndex = Math.max(0, Math.min(10, Math.round((frog.col / (COLS - 1)) * 10)));
-      if (mappedIndex === correct) {
+      const idx = getSelectedHomeIndex(frog.x);
+      if (idx === correct) {
         gameState.score += 300;
         hud.score.textContent = gameState.score.toString();
         sound.score();
