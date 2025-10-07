@@ -44,10 +44,6 @@ const hud = {
   stage: document.getElementById('stage'),
 };
 const finalMessage = document.getElementById('finalMessage');
-const btnUp = document.getElementById('btnUp');
-const btnDown = document.getElementById('btnDown');
-const btnLeft = document.getElementById('btnLeft');
-const btnRight = document.getElementById('btnRight');
 // ---- Audio ----
 class Sound {
   constructor() {
@@ -537,44 +533,5 @@ requestAnimationFrame(loop);
 window.addEventListener('click', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
 window.addEventListener('keydown', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
 
-// Touch helpers
-function bindPress(el, fn) {
-  if (!el) return;
-  el.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
-  el.addEventListener('click', (e) => { e.preventDefault(); fn(); });
-}
-bindPress(btnUp, () => { sound.jump(); frog.move(0, -1); });
-bindPress(btnDown, () => { frog.move(0, 1); });
-bindPress(btnLeft, () => { frog.move(-1, 0); });
-bindPress(btnRight, () => { frog.move(1, 0); });
-
-// Swipe gesture
-let touchStartX = 0, touchStartY = 0, touchActive = false;
-const SWIPE_MIN = 24; // px
-canvas.addEventListener('touchstart', (e) => {
-  if (e.touches.length > 0) {
-    touchActive = true;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }
-}, { passive: true });
-canvas.addEventListener('touchend', (e) => {
-  if (!touchActive) return;
-  touchActive = false;
-  const touch = e.changedTouches && e.changedTouches[0];
-  if (!touch) return;
-  const dx = touch.clientX - touchStartX;
-  const dy = touch.clientY - touchStartY;
-  if (Math.abs(dx) < SWIPE_MIN && Math.abs(dy) < SWIPE_MIN) return;
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx > 0) frog.move(1, 0); else frog.move(-1, 0);
-  } else {
-    if (dy > 0) frog.move(0, 1); else { sound.jump(); frog.move(0, -1); }
-  }
-});
-
-// Prevent page scroll on arrow keys and touch when focused on canvas
-window.addEventListener('touchmove', (e) => {
-  if (e.target === canvas) e.preventDefault();
-}, { passive: false });
+// (removed) mobile controls & swipe handlers
 
