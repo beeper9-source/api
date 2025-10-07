@@ -16,3 +16,11 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
 .final-important { font-weight: 800; font-size: 20px; margin-top: 4px; }
 .highlight { color: #ffb703; text-shadow: 0 0 6px rgba(255,183,3,.6); }
 
+/* Mobile controls */
+.mobile-controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: grid; gap: 6px; z-index: 9; }
+.mobile-controls .row { display: flex; justify-content: center; gap: 6px; }
+.mobile-controls button { width: 56px; height: 56px; border-radius: 12px; border: 0; background: rgba(0,0,0,.5); color: #e9eef7; font-size: 22px; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+@media (min-width: 900px) {
+  .mobile-controls { display: none; }
+}
+
