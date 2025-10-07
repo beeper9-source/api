@@ -32,7 +32,49 @@ const hud = {
   score: document.getElementById('score'),
   high: document.getElementById('highScore'),
   restart: document.getElementById('restart'),
+  mute: document.getElementById('mute'),
 };
+// ---- Audio ----
+class Sound {
+  constructor() {
+    this.audioCtx = null;
+    this.muted = false;
+  }
+  ensureContext() {
+    if (!this.audioCtx) {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+  playTone(freq, durationMs, type = 'sine', gain = 0.05) {
+    if (this.muted) return;
+    this.ensureContext();
+    const now = this.audioCtx.currentTime;
+    const osc = this.audioCtx.createOscillator();
+    const g = this.audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(gain, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+    osc.connect(g).connect(this.audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + durationMs / 1000);
+  }
+  move() {
+    this.playTone(700, 60, 'square', 0.03);
+  }
+  score() {
+    this.playTone(1046, 120, 'triangle', 0.06);
+  }
+  die() {
+    this.playTone(180, 220, 'sawtooth', 0.08);
+  }
+  gameOver() {
+    this.playTone(150, 500, 'square', 0.06);
+  }
+}
+
+const sound = new Sound();
+
 
 hud.high.textContent = gameState.highScore.toString();
 
@@ -54,6 +96,7 @@ class Frog {
     this.x = this.col * TILE + TILE / 2;
     this.y = this.row * TILE + TILE / 2;
     this.onLog = null;
+    sound.move();
   }
   update(dt) {
     if (this.onLog) {
@@ -68,8 +111,10 @@ class Frog {
     gameState.lives -= 1;
     hud.lives.textContent = gameState.lives.toString();
     if (gameState.lives <= 0) {
+      sound.gameOver();
       gameOver();
     } else {
+      sound.die();
       this.reset();
     }
   }
@@ -212,6 +257,7 @@ function update(dt) {
   if (frog.row <= HOME_ROW) {
     gameState.score += 100;
     hud.score.textContent = gameState.score.toString();
+    sound.score();
     frog.reset();
   }
 
@@ -287,6 +333,10 @@ window.addEventListener('keydown', (e) => {
 });
 
 hud.restart.addEventListener('click', restart);
+hud.mute.addEventListener('click', () => {
+  sound.muted = !sound.muted;
+  hud.mute.textContent = sound.muted ? '🔈 소리 켜기' : '🔊 소리 끄기';
+});
 
 requestAnimationFrame(loop);
 
