@@ -9,14 +9,11 @@ const LANE_START = 3;   // 첫 도로/물길 시작 행 (위에서부터)
 const LANE_END = 12;    // 마지막 도로/물길 행
 const HOME_ROW = 1;     // 연못 목표 행
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  // 종횡비를 유지하기 위해 14x16 격자를 기준으로 타일 크기 결정
+// 고정 크기 캔버스: HTML 속성의 width/height에 맞춰 타일 크기 계산
+function recalcTile() {
   TILE = Math.floor(Math.min(canvas.width / COLS, canvas.height / ROWS));
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+recalcTile();
 
 const COLORS = {
   background: '#10162f',
