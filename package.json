@@ -1,0 +1,14 @@
+{
+  "name": "local-env-api-key-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Example Node.js app that reads API key from local .env and keeps it out of Git.",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
+
