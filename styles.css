@@ -9,4 +9,8 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, Bl
 .controls { display: flex; gap: 8px; justify-content: center; }
 
 canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08); background: #10162f; max-width: 100%; height: auto; }
+.final-message { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 24px; pointer-events: none; }
+.final-message.hidden { display: none; }
+.final-box { background: rgba(0,0,0,.6); color: #e9eef7; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px 16px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.final-line { font-size: 16px; text-align: center; line-height: 1.6; }
 

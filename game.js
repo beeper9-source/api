@@ -43,6 +43,7 @@ const hud = {
   mute: document.getElementById('mute'),
   stage: document.getElementById('stage'),
 };
+const finalMessage = document.getElementById('finalMessage');
 // ---- Audio ----
 class Sound {
   constructor() {
@@ -458,9 +459,7 @@ function draw() {
     ctx.fillText('11월 16일', canvas.width / 2, canvas.height / 2 + 6);
     ctx.font = '14px sans-serif';
     ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 34);
-    ctx.font = '15px sans-serif';
-    ctx.fillText('연주회 날짜 맞추셨어요. 미션을 완료하신 분은', canvas.width / 2, canvas.height / 2 + 70);
-    ctx.fillText('단톡방에 "가을단풍이 빨갛네요"라고 올려주세요', canvas.width / 2, canvas.height / 2 + 92);
+    // 하단 DOM 오버레이는 별도로 표시
   }
 }
 
@@ -477,6 +476,7 @@ function gameOver() {
   gameState.running = false;
   gameState.overlay = 'over';
   hud.restart.classList.remove('hidden');
+  if (finalMessage) finalMessage.classList.add('hidden');
   gameState.highScore = Math.max(gameState.highScore, gameState.score);
   localStorage.setItem('froggerHighScore', gameState.highScore.toString());
   hud.high.textContent = gameState.highScore.toString();
@@ -486,6 +486,7 @@ function gameClear() {
   gameState.running = false;
   gameState.overlay = 'clear';
   hud.restart.classList.remove('hidden');
+  if (finalMessage) finalMessage.classList.remove('hidden');
 }
 
 function restart() {
@@ -499,6 +500,7 @@ function restart() {
   gameState.overlay = null;
   hud.restart.classList.add('hidden');
   frog.reset();
+  if (finalMessage) finalMessage.classList.add('hidden');
   sound.resumeIfSuspended().then(() => sound.startBgm());
 }
 
