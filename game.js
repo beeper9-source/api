@@ -317,6 +317,11 @@ function getSelectedHomeIndex(frogX) {
   return idx;
 }
 
+function getHomeSlotCenterX(index) {
+  const { margin, slotW } = getHomeSlotConfig();
+  return margin + slotW * index + slotW / 2;
+}
+
 function aabb(x, y, w, h, px, py, pr) {
   const cx = Math.max(x - w / 2, Math.min(px, x + w / 2));
   const cy = Math.max(y - h / 2, Math.min(py, y + h / 2));
@@ -398,6 +403,15 @@ function update(dt) {
         frog.die();
         frog.reset();
       }
+    }
+  }
+
+  // 상단 영역에서 개구리 위치를 슬롯 중심에 스냅하여 14칸 격자와 12/11칸 슬롯의 불일치 해소
+  if (frog.row <= HOME_ROW + 1) {
+    const idx = getSelectedHomeIndex(frog.x);
+    if (idx >= 0) {
+      frog.x = getHomeSlotCenterX(idx);
+      frog.col = Math.floor(frog.x / TILE);
     }
   }
 
