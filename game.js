@@ -39,11 +39,20 @@ class Sound {
   constructor() {
     this.audioCtx = null;
     this.muted = false;
+    this.bgmInterval = null;
+    this.bgmActive = false;
   }
   ensureContext() {
     if (!this.audioCtx) {
       this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+  }
+  resumeIfSuspended() {
+    this.ensureContext();
+    if (this.audioCtx.state === 'suspended') {
+      return this.audioCtx.resume();
+    }
+    return Promise.resolve();
   }
   playTone(freq, durationMs, type = 'sine', gain = 0.05) {
     if (this.muted) return;
@@ -62,6 +71,10 @@ class Sound {
   move() {
     this.playTone(700, 60, 'square', 0.03);
   }
+  jump() {
+    // 조금 더 도약감 있는 짧은 톤
+    this.playTone(820, 70, 'square', 0.04);
+  }
   score() {
     this.playTone(1046, 120, 'triangle', 0.06);
   }
@@ -70,6 +83,28 @@ class Sound {
   }
   gameOver() {
     this.playTone(150, 500, 'square', 0.06);
+  }
+  logMount() {
+    // 통나무 탑승: 짧은 상승 이음
+    this.playTone(500, 50, 'triangle', 0.035);
+    setTimeout(() => this.playTone(650, 60, 'triangle', 0.035), 55);
+  }
+  startBgm() {
+    if (this.muted || this.bgmActive) return;
+    this.bgmActive = true;
+    // 간단한 2음 반복 배경음
+    const playLoop = () => {
+      if (this.muted) return; // 음소거 시 스킵
+      this.playTone(220, 160, 'sine', 0.02);
+      setTimeout(() => this.playTone(277, 160, 'sine', 0.02), 200);
+    };
+    playLoop();
+    this.bgmInterval = setInterval(playLoop, 2000);
+  }
+  stopBgm() {
+    if (this.bgmInterval) clearInterval(this.bgmInterval);
+    this.bgmInterval = null;
+    this.bgmActive = false;
   }
 }
 
@@ -222,6 +257,7 @@ function update(dt) {
   roads.forEach(lane => lane.forEach(e => e.update(dt)));
   logs.forEach(lane => lane.forEach(e => e.update(dt)));
 
+  const wasOnLog = !!frog.onLog;
   frog.onLog = null;
 
   // 도로 충돌 체크
@@ -250,6 +286,9 @@ function update(dt) {
     if (!onLog) {
       frog.die();
       return;
+    }
+    if (!wasOnLog && onLog) {
+      sound.logMount();
     }
   }
 
@@ -317,6 +356,7 @@ function restart() {
   gameState.running = true;
   hud.restart.classList.add('hidden');
   frog.reset();
+  sound.resumeIfSuspended().then(() => sound.startBgm());
 }
 
 window.addEventListener('keydown', (e) => {
@@ -325,7 +365,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   switch (e.key) {
-    case 'ArrowUp': frog.move(0, -1); break;
+    case 'ArrowUp': sound.jump(); frog.move(0, -1); break;
     case 'ArrowDown': frog.move(0, 1); break;
     case 'ArrowLeft': frog.move(-1, 0); break;
     case 'ArrowRight': frog.move(1, 0); break;
@@ -336,7 +376,15 @@ hud.restart.addEventListener('click', restart);
 hud.mute.addEventListener('click', () => {
   sound.muted = !sound.muted;
   hud.mute.textContent = sound.muted ? '🔈 소리 켜기' : '🔊 소리 끄기';
+  if (sound.muted) {
+    sound.stopBgm();
+  } else {
+    sound.resumeIfSuspended().then(() => sound.startBgm());
+  }
 });
 
 requestAnimationFrame(loop);
+// 사용자 입력 전에는 자동 재생 제한이 있으므로, 첫 키 입력 시 BGM 시작
+window.addEventListener('click', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
+window.addEventListener('keydown', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
 
