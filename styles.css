@@ -9,7 +9,7 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, Bl
 .controls { display: flex; gap: 8px; justify-content: center; }
 
 canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08); background: #10162f; max-width: 100%; height: auto; }
-.final-message { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 24px; pointer-events: none; }
+.final-message { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: 24px; pointer-events: none; }
 .final-message.hidden { display: none; }
 .final-box { background: rgba(0,0,0,.75); color: #e9eef7; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; padding: 16px 18px; box-shadow: 0 10px 28px rgba(0,0,0,.45); }
 .final-line { font-size: 18px; text-align: center; line-height: 1.8; }
@@ -82,6 +82,16 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
     height: 50px;
     font-size: 20px;
   }
+  
+  /* 모바일에서 팝업 메시지 위치 조정 */
+  .final-message {
+    padding: 16px;
+    align-items: flex-start;
+  }
+  
+  .final-box {
+    margin-top: 20px;
+  }
 }
 
 /* 매우 작은 화면에서 키보드 크기 조정 */
@@ -100,6 +110,24 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
   
   .keyboard-row {
     gap: 8px;
+  }
+  
+  /* 작은 화면에서 팝업 메시지 추가 조정 */
+  .final-message {
+    padding: 12px;
+  }
+  
+  .final-box {
+    margin-top: 10px;
+    padding: 14px 16px;
+  }
+  
+  .final-line {
+    font-size: 16px;
+  }
+  
+  .final-important {
+    font-size: 18px;
   }
 }
 
