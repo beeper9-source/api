@@ -292,7 +292,7 @@ class Frog {
     this.reset();
   }
   reset() {
-    this.col = Math.floor(COLS / 2);
+    this.col = Math.floor(COLS / 4); // 중앙에서 왼쪽으로 이동 (1/4 위치)
     this.row = ROWS - 2;
     this.x = this.col * TILE + TILE / 2;
     this.y = this.row * TILE + TILE / 2;
