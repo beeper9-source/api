@@ -1,6 +1,169 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
+// 이미지 로드
+const treeImage = new Image();
+treeImage.src = 'tree.JPG';
+
+// 이미지 로드 완료 이벤트
+treeImage.onload = function() {
+  console.log('Tree image loaded successfully');
+  // 검정색 배경 제거 처리
+  removeBlackBackground(treeImage);
+  
+  // 추가 배경 제거 (더 강력한 방법)
+  setTimeout(() => {
+    removeBackgroundAdvanced(treeImage);
+  }, 100);
+};
+
+treeImage.onerror = function() {
+  console.log('Failed to load tree image, using fallback design');
+};
+
+// 검정색 배경을 제거하는 함수
+function removeBlackBackground(image) {
+  // 임시 캔버스 생성
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  tempCanvas.width = image.width;
+  tempCanvas.height = image.height;
+  
+  // 이미지를 임시 캔버스에 그리기
+  tempCtx.drawImage(image, 0, 0);
+  
+  // 이미지 데이터 가져오기
+  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imageData.data;
+  
+  // 픽셀별로 검정색 배경 제거
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];     // Red
+    const g = data[i + 1]; // Green
+    const b = data[i + 2]; // Blue
+    const a = data[i + 3]; // Alpha
+    
+    // 더 넓은 범위의 검정색 판정
+    const isPureBlack = r === 0 && g === 0 && b === 0; // 완전한 검정색
+    const isVeryDark = r <= 60 && g <= 60 && b <= 60; // 매우 어두운 색상 (범위 확대)
+    const isDark = r <= 100 && g <= 100 && b <= 100; // 어두운 색상 (범위 확대)
+    const isBlackish = (r + g + b) <= 180; // 전체적으로 어두운 색상 (범위 확대)
+    const isGrayish = Math.abs(r - g) <= 20 && Math.abs(g - b) <= 20 && Math.abs(r - b) <= 20; // 회색조
+    
+    // 검정색 배경 제거 로직
+    if (isPureBlack) {
+      data[i + 3] = 0; // 완전 투명
+    } else if (isVeryDark && isBlackish) {
+      data[i + 3] = 0; // 완전 투명
+    } else if (isDark && isBlackish && isGrayish) {
+      data[i + 3] = 0; // 완전 투명
+    } else if (isDark && isBlackish) {
+      data[i + 3] = Math.max(0, a - 150); // 매우 투명하게
+    } else if (isDark) {
+      data[i + 3] = Math.max(0, a - 80); // 투명하게
+    }
+    
+    // 추가: 가장자리 픽셀도 처리 (배경일 가능성이 높음)
+    const pixelIndex = i / 4;
+    const x = pixelIndex % tempCanvas.width;
+    const y = Math.floor(pixelIndex / tempCanvas.width);
+    const isEdge = x < 5 || x > tempCanvas.width - 5 || y < 5 || y > tempCanvas.height - 5;
+    
+    if (isEdge && isDark) {
+      data[i + 3] = 0; // 가장자리의 어두운 픽셀도 투명하게
+    }
+  }
+  
+  // 수정된 이미지 데이터를 다시 캔버스에 그리기
+  tempCtx.putImageData(imageData, 0, 0);
+  
+  // 원본 이미지의 src를 수정된 캔버스의 데이터 URL로 변경
+  treeImage.src = tempCanvas.toDataURL();
+  
+  console.log('Black background removed from tree image with improved algorithm');
+}
+
+// 고급 배경 제거 함수 (색상 기반 마스킹)
+function removeBackgroundAdvanced(image) {
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  tempCanvas.width = image.width;
+  tempCanvas.height = image.height;
+  
+  tempCtx.drawImage(image, 0, 0);
+  
+  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imageData.data;
+  
+  // 색상 히스토그램 분석
+  const colorCounts = {};
+  for (let i = 0; i < data.length; i += 4) {
+    const r = Math.floor(data[i] / 10) * 10;
+    const g = Math.floor(data[i + 1] / 10) * 10;
+    const b = Math.floor(data[i + 2] / 10) * 10;
+    const colorKey = `${r},${g},${b}`;
+    colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
+  }
+  
+  // 가장 많이 나타나는 어두운 색상들을 배경으로 간주
+  const sortedColors = Object.entries(colorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10); // 상위 10개 색상
+  
+  const backgroundColors = [];
+  sortedColors.forEach(([colorKey, count]) => {
+    const [r, g, b] = colorKey.split(',').map(Number);
+    const totalPixels = tempCanvas.width * tempCanvas.height;
+    const percentage = (count / totalPixels) * 100;
+    
+    // 어두운 색상이고 전체의 5% 이상을 차지하면 배경으로 간주
+    if (r <= 120 && g <= 120 && b <= 120 && percentage > 5) {
+      backgroundColors.push({r, g, b, threshold: 30});
+    }
+  });
+  
+  console.log('Detected background colors:', backgroundColors);
+  
+  // 배경 색상들을 투명하게 처리
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    
+    let isBackground = false;
+    
+    // 각 배경 색상과 비교
+    backgroundColors.forEach(bgColor => {
+      const distance = Math.sqrt(
+        Math.pow(r - bgColor.r, 2) + 
+        Math.pow(g - bgColor.g, 2) + 
+        Math.pow(b - bgColor.b, 2)
+      );
+      
+      if (distance <= bgColor.threshold) {
+        isBackground = true;
+      }
+    });
+    
+    // 추가 조건: 가장자리 픽셀과 어두운 색상
+    const pixelIndex = i / 4;
+    const x = pixelIndex % tempCanvas.width;
+    const y = Math.floor(pixelIndex / tempCanvas.width);
+    const isEdge = x < 10 || x > tempCanvas.width - 10 || y < 10 || y > tempCanvas.height - 10;
+    
+    if (isBackground || (isEdge && r <= 150 && g <= 150 && b <= 150)) {
+      data[i + 3] = 0; // 완전 투명
+    }
+  }
+  
+  tempCtx.putImageData(imageData, 0, 0);
+  treeImage.src = tempCanvas.toDataURL();
+  
+  console.log('Advanced background removal completed');
+}
+
 let TILE = 32;
 let COLS = 14;
 let ROWS = 16;
@@ -229,50 +392,134 @@ class Entity {
     const radius = this.height / 2;
     const centerX = this.x;
     const centerY = this.y;
+    const logLength = this.width;
     
-    // 통나무 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // 이미지가 로드되었는지 확인
+    if (treeImage.complete && treeImage.naturalWidth > 0) {
+      // 통나무 그림자 (물에 비친 그림자)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(centerX + 3, centerY + radius + 2, logLength / 2, radius * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // tree.JPG 이미지를 통나무로 사용
+      ctx.drawImage(
+        treeImage,
+        centerX - logLength / 2,
+        centerY - radius,
+        logLength,
+        this.height
+      );
+      
+      // 통나무 테두리 (선택사항)
+      ctx.strokeStyle = 'rgba(101, 67, 33, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, logLength / 2, radius, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      // 이미지가 로드되지 않았을 때는 기존 디자인 사용
+      this.drawLogFallback();
+    }
+  }
+  
+  drawLogFallback() {
+    const radius = this.height / 2;
+    const centerX = this.x;
+    const centerY = this.y;
+    const logLength = this.width;
+    
+    // 통나무 그림자 (물에 비친 그림자)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(centerX + 2, centerY + 2, this.width / 2, radius, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX + 3, centerY + radius + 2, logLength / 2, radius * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // 통나무 본체 (나무색 그라데이션)
-    const gradient = ctx.createLinearGradient(centerX - this.width / 2, centerY, centerX + this.width / 2, centerY);
+    // 통나무 본체 - 긴 원통형
+    const gradient = ctx.createLinearGradient(centerX - logLength / 2, centerY, centerX + logLength / 2, centerY);
     gradient.addColorStop(0, '#8B4513');  // 갈색
-    gradient.addColorStop(0.3, '#A0522D'); // 밝은 갈색
-    gradient.addColorStop(0.7, '#8B4513'); // 갈색
+    gradient.addColorStop(0.2, '#A0522D'); // 밝은 갈색
+    gradient.addColorStop(0.5, '#CD853F'); // 더 밝은 갈색 (중앙)
+    gradient.addColorStop(0.8, '#A0522D'); // 밝은 갈색
     gradient.addColorStop(1, '#654321');   // 어두운 갈색
     
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, this.width / 2, radius, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, logLength / 2, radius, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // 통나무 테두리
+    // 통나무 양끝 원형 단면
+    ctx.fillStyle = '#654321';
+    ctx.beginPath();
+    ctx.arc(centerX - logLength / 2, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX + logLength / 2, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 양끝 단면의 나이테
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.8)';
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i <= 4; i++) {
+      const ringRadius = radius * (i / 5);
+      // 왼쪽 단면
+      ctx.beginPath();
+      ctx.arc(centerX - logLength / 2, centerY, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      // 오른쪽 단면
+      ctx.beginPath();
+      ctx.arc(centerX + logLength / 2, centerY, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    
+    // 통나무 측면 테두리
     ctx.strokeStyle = '#654321';
     ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, logLength / 2, radius, 0, 0, Math.PI * 2);
     ctx.stroke();
     
-    // 나무 나이테 (연륜) 효과
-    ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)';
+    // 통나무 측면 나무 결 (세로 줄무늬)
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.5)';
     ctx.lineWidth = 1;
-    for (let i = 1; i <= 3; i++) {
-      const ringRadius = (this.width / 2) * (i / 4);
+    for (let i = 0; i < 5; i++) {
+      const lineX = centerX - logLength / 3 + (logLength / 2.5) * i;
       ctx.beginPath();
-      ctx.ellipse(centerX, centerY, ringRadius, ringRadius * 0.6, 0, 0, Math.PI * 2);
+      ctx.moveTo(lineX, centerY - radius * 0.9);
+      ctx.lineTo(lineX, centerY + radius * 0.9);
       ctx.stroke();
     }
     
-    // 나무 결 (세로 줄무늬)
-    ctx.strokeStyle = 'rgba(139, 69, 19, 0.4)';
-    ctx.lineWidth = 1;
+    // 통나무 표면의 나무 결 (가로 줄무늬)
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.3)';
+    ctx.lineWidth = 0.8;
     for (let i = 0; i < 3; i++) {
-      const lineX = centerX - this.width / 4 + (this.width / 4) * i;
+      const lineY = centerY - radius * 0.6 + (radius * 0.6) * i;
       ctx.beginPath();
-      ctx.moveTo(lineX, centerY - radius * 0.8);
-      ctx.lineTo(lineX, centerY + radius * 0.8);
+      ctx.moveTo(centerX - logLength / 2.2, lineY);
+      ctx.lineTo(centerX + logLength / 2.2, lineY);
       ctx.stroke();
     }
+    
+    // 통나무 표면의 하이라이트 (물에 젖은 느낌)
+    const highlightGradient = ctx.createLinearGradient(centerX - logLength / 2, centerY - radius, centerX - logLength / 2, centerY + radius);
+    highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+    highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+    
+    ctx.fillStyle = highlightGradient;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, logLength / 2, radius, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 통나무 끝부분의 나무 껍질 텍스처
+    ctx.fillStyle = 'rgba(101, 67, 33, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(centerX - logLength / 2, centerY, radius * 0.8, radius * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(centerX + logLength / 2, centerY, radius * 0.8, radius * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
   
   drawCar() {
