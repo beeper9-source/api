@@ -881,5 +881,129 @@ requestAnimationFrame(loop);
 window.addEventListener('click', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
 window.addEventListener('keydown', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
 
-// (removed) mobile controls & swipe handlers
+// 모바일용 가상 키보드 이벤트 핸들러
+const virtualKeys = {
+  keyUp: document.getElementById('keyUp'),
+  keyDown: document.getElementById('keyDown'),
+  keyLeft: document.getElementById('keyLeft'),
+  keyRight: document.getElementById('keyRight')
+};
+
+// 가상 키보드 버튼 이벤트 추가
+virtualKeys.keyUp.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    sound.jump();
+    frog.move(0, -1);
+  }
+});
+
+virtualKeys.keyDown.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(0, 1);
+  }
+});
+
+virtualKeys.keyLeft.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(-1, 0);
+  }
+});
+
+virtualKeys.keyRight.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(1, 0);
+  }
+});
+
+// 마우스 클릭 이벤트도 추가 (데스크톱에서도 사용 가능)
+virtualKeys.keyUp.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    sound.jump();
+    frog.move(0, -1);
+  }
+});
+
+virtualKeys.keyDown.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(0, 1);
+  }
+});
+
+virtualKeys.keyLeft.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(-1, 0);
+  }
+});
+
+virtualKeys.keyRight.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (gameState.running) {
+    frog.move(1, 0);
+  }
+});
+
+// 터치 이벤트로 BGM 시작
+virtualKeys.keyUp.addEventListener('touchstart', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
+virtualKeys.keyDown.addEventListener('touchstart', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
+virtualKeys.keyLeft.addEventListener('touchstart', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
+virtualKeys.keyRight.addEventListener('touchstart', () => sound.resumeIfSuspended().then(() => sound.startBgm()), { once: true });
+
+// 모바일 스와이프 제스처 지원
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  sound.resumeIfSuspended().then(() => sound.startBgm());
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  touchEndX = touch.clientX;
+  touchEndY = touch.clientY;
+  
+  if (!gameState.running) return;
+  
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  const minSwipeDistance = 30; // 최소 스와이프 거리
+  
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    // 수평 스와이프
+    if (Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        // 오른쪽 스와이프
+        frog.move(1, 0);
+      } else {
+        // 왼쪽 스와이프
+        frog.move(-1, 0);
+      }
+    }
+  } else {
+    // 수직 스와이프
+    if (Math.abs(deltaY) > minSwipeDistance) {
+      if (deltaY > 0) {
+        // 아래쪽 스와이프
+        frog.move(0, 1);
+      } else {
+        // 위쪽 스와이프
+        sound.jump();
+        frog.move(0, -1);
+      }
+    }
+  }
+}, { passive: false });
 

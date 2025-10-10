@@ -16,5 +16,90 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
 .final-important { font-weight: 800; font-size: 20px; margin-top: 4px; }
 .highlight { color: #ffb703; text-shadow: 0 0 6px rgba(255,183,3,.6); }
 
-/* (removed) mobile controls */
+/* 모바일용 가상 키보드 */
+.virtual-keyboard {
+  display: none; /* 기본적으로 숨김 */
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.keyboard-row:last-child {
+  margin-bottom: 0;
+}
+
+.virtual-key {
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.1s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.virtual-key:active {
+  transform: scale(0.95);
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+.virtual-key:hover {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* 모바일에서만 가상 키보드 표시 */
+@media (max-width: 768px) {
+  .virtual-keyboard {
+    display: block;
+  }
+  
+  .virtual-key {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+/* 매우 작은 화면에서 키보드 크기 조정 */
+@media (max-width: 480px) {
+  .virtual-keyboard {
+    bottom: 10px;
+    padding: 12px;
+  }
+  
+  .virtual-key {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+  
+  .keyboard-row {
+    gap: 8px;
+  }
+}
 
