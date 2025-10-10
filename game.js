@@ -200,13 +200,14 @@ class Frog {
 }
 
 class Entity {
-  constructor(x, y, width, height, speed, color) {
+  constructor(x, y, width, height, speed, color, type = 'car') {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.speed = speed;
     this.color = color;
+    this.type = type;
   }
   update(dt) {
     this.x += this.speed * dt;
@@ -217,6 +218,64 @@ class Entity {
     }
   }
   draw() {
+    if (this.type === 'log') {
+      this.drawLog();
+    } else {
+      this.drawCar();
+    }
+  }
+  
+  drawLog() {
+    const radius = this.height / 2;
+    const centerX = this.x;
+    const centerY = this.y;
+    
+    // 통나무 그림자
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(centerX + 2, centerY + 2, this.width / 2, radius, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 통나무 본체 (나무색 그라데이션)
+    const gradient = ctx.createLinearGradient(centerX - this.width / 2, centerY, centerX + this.width / 2, centerY);
+    gradient.addColorStop(0, '#8B4513');  // 갈색
+    gradient.addColorStop(0.3, '#A0522D'); // 밝은 갈색
+    gradient.addColorStop(0.7, '#8B4513'); // 갈색
+    gradient.addColorStop(1, '#654321');   // 어두운 갈색
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, this.width / 2, radius, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 통나무 테두리
+    ctx.strokeStyle = '#654321';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // 나무 나이테 (연륜) 효과
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const ringRadius = (this.width / 2) * (i / 4);
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, ringRadius, ringRadius * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    
+    // 나무 결 (세로 줄무늬)
+    ctx.strokeStyle = 'rgba(139, 69, 19, 0.4)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const lineX = centerX - this.width / 4 + (this.width / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(lineX, centerY - radius * 0.8);
+      ctx.lineTo(lineX, centerY + radius * 0.8);
+      ctx.stroke();
+    }
+  }
+  
+  drawCar() {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
   }
@@ -234,7 +293,7 @@ function createLane(row, count, speed, kind) {
     const x = i * spacing + spacing / 2;
     const width = kind === 'car' ? TILE * 1.5 : TILE * 2.4;
     const color = kind === 'car' ? COLORS.car : COLORS.log;
-    items.push(new Entity(x, y, width, TILE * 0.8, speed, color));
+    items.push(new Entity(x, y, width, TILE * 0.8, speed, color, kind));
   }
   return items;
 }
@@ -263,16 +322,14 @@ function drawBackground() {
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 상단 연못
-  ctx.fillStyle = COLORS.water;
-  ctx.fillRect(0, 0, canvas.width, TILE * 2);
+  // 상단 연못 - 강물 그라데이션과 물결 패턴
+  drawWaterArea(0, 0, canvas.width, TILE * 2);
 
   // 상단 집 슬롯(스테이지별 표시)
   drawHomeSlots();
 
-  // 물길
-  ctx.fillStyle = COLORS.water;
-  ctx.fillRect(0, TILE * 3, canvas.width, TILE * 4);
+  // 물길 - 강물 그라데이션과 물결 패턴
+  drawWaterArea(0, TILE * 3, canvas.width, TILE * 4);
 
   // 도로
   ctx.fillStyle = COLORS.road;
@@ -281,6 +338,50 @@ function drawBackground() {
   // 하단 잔디
   ctx.fillStyle = COLORS.grass;
   ctx.fillRect(0, TILE * 11, canvas.width, TILE * 5);
+}
+
+function drawWaterArea(x, y, width, height) {
+  // 물 그라데이션 배경
+  const gradient = ctx.createLinearGradient(x, y, x, y + height);
+  gradient.addColorStop(0, '#0ea5e9');  // 밝은 파란색 (수면)
+  gradient.addColorStop(0.5, '#0284c7'); // 중간 파란색
+  gradient.addColorStop(1, '#0369a1');   // 어두운 파란색 (깊은 곳)
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, width, height);
+  
+  // 물결 패턴 추가
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 2;
+  
+  for (let i = 0; i < 3; i++) {
+    const waveY = y + (height / 3) * (i + 1);
+    const amplitude = 8;
+    const frequency = 0.02;
+    
+    ctx.beginPath();
+    for (let waveX = x; waveX < x + width; waveX += 2) {
+      const waveOffset = Math.sin(waveX * frequency + Date.now() * 0.001) * amplitude;
+      if (waveX === x) {
+        ctx.moveTo(waveX, waveY + waveOffset);
+      } else {
+        ctx.lineTo(waveX, waveY + waveOffset);
+      }
+    }
+    ctx.stroke();
+  }
+  
+  // 물 표면 반짝임 효과
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+  for (let i = 0; i < 8; i++) {
+    const sparkleX = x + Math.random() * width;
+    const sparkleY = y + Math.random() * height;
+    const sparkleSize = Math.random() * 3 + 1;
+    
+    ctx.beginPath();
+    ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function getHomeSlotConfig() {
