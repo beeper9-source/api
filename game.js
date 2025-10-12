@@ -1,167 +1,174 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// 이미지 로드
+// Supabase 설정
+const SUPABASE_URL = 'https://dmgtwzbvpualecnrcyug.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtZ3R3emJ2cHVhbGVjbnJjeXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxMzAzODUsImV4cCI6MjA3MjcwNjM4NX0.Cddfcij0GL3lLCZz51tALcyKULfGECyq4YNpjVh9Uf4';
+
+// Supabase 클라이언트 초기화
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 통나무 이미지 로드
 const treeImage = new Image();
 treeImage.src = 'tree.JPG';
 
-// 이미지 로드 완료 이벤트
 treeImage.onload = function() {
-  console.log('Tree image loaded successfully');
-  // 검정색 배경 제거 처리
-  removeBlackBackground(treeImage);
-  
-  // 추가 배경 제거 (더 강력한 방법)
-  setTimeout(() => {
-    removeBackgroundAdvanced(treeImage);
-  }, 100);
+  console.log('Tree image loaded successfully for logs');
 };
 
 treeImage.onerror = function() {
-  console.log('Failed to load tree image, using fallback design');
+  console.log('Failed to load tree image, using fallback design for logs');
 };
 
 // 검정색 배경을 제거하는 함수
 function removeBlackBackground(image) {
-  // 임시 캔버스 생성
-  const tempCanvas = document.createElement('canvas');
-  const tempCtx = tempCanvas.getContext('2d');
-  
-  tempCanvas.width = image.width;
-  tempCanvas.height = image.height;
-  
-  // 이미지를 임시 캔버스에 그리기
-  tempCtx.drawImage(image, 0, 0);
-  
-  // 이미지 데이터 가져오기
-  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imageData.data;
-  
-  // 픽셀별로 검정색 배경 제거
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];     // Red
-    const g = data[i + 1]; // Green
-    const b = data[i + 2]; // Blue
-    const a = data[i + 3]; // Alpha
+  try {
+    // 임시 캔버스 생성
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
     
-    // 더 넓은 범위의 검정색 판정
-    const isPureBlack = r === 0 && g === 0 && b === 0; // 완전한 검정색
-    const isVeryDark = r <= 60 && g <= 60 && b <= 60; // 매우 어두운 색상 (범위 확대)
-    const isDark = r <= 100 && g <= 100 && b <= 100; // 어두운 색상 (범위 확대)
-    const isBlackish = (r + g + b) <= 180; // 전체적으로 어두운 색상 (범위 확대)
-    const isGrayish = Math.abs(r - g) <= 20 && Math.abs(g - b) <= 20 && Math.abs(r - b) <= 20; // 회색조
+    tempCanvas.width = image.width;
+    tempCanvas.height = image.height;
     
-    // 검정색 배경 제거 로직
-    if (isPureBlack) {
-      data[i + 3] = 0; // 완전 투명
-    } else if (isVeryDark && isBlackish) {
-      data[i + 3] = 0; // 완전 투명
-    } else if (isDark && isBlackish && isGrayish) {
-      data[i + 3] = 0; // 완전 투명
-    } else if (isDark && isBlackish) {
-      data[i + 3] = Math.max(0, a - 150); // 매우 투명하게
-    } else if (isDark) {
-      data[i + 3] = Math.max(0, a - 80); // 투명하게
+    // 이미지를 임시 캔버스에 그리기
+    tempCtx.drawImage(image, 0, 0);
+    
+    // 이미지 데이터 가져오기
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imageData.data;
+    
+    // 픽셀별로 검정색 배경 제거
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];     // Red
+      const g = data[i + 1]; // Green
+      const b = data[i + 2]; // Blue
+      const a = data[i + 3]; // Alpha
+      
+      // 더 넓은 범위의 검정색 판정
+      const isPureBlack = r === 0 && g === 0 && b === 0; // 완전한 검정색
+      const isVeryDark = r <= 60 && g <= 60 && b <= 60; // 매우 어두운 색상 (범위 확대)
+      const isDark = r <= 100 && g <= 100 && b <= 100; // 어두운 색상 (범위 확대)
+      const isBlackish = (r + g + b) <= 180; // 전체적으로 어두운 색상 (범위 확대)
+      const isGrayish = Math.abs(r - g) <= 20 && Math.abs(g - b) <= 20 && Math.abs(r - b) <= 20; // 회색조
+      
+      // 검정색 배경 제거 로직
+      if (isPureBlack) {
+        data[i + 3] = 0; // 완전 투명
+      } else if (isVeryDark && isBlackish) {
+        data[i + 3] = 0; // 완전 투명
+      } else if (isDark && isBlackish && isGrayish) {
+        data[i + 3] = 0; // 완전 투명
+      } else if (isDark && isBlackish) {
+        data[i + 3] = Math.max(0, a - 150); // 매우 투명하게
+      } else if (isDark) {
+        data[i + 3] = Math.max(0, a - 80); // 투명하게
+      }
+      
+      // 추가: 가장자리 픽셀도 처리 (배경일 가능성이 높음)
+      const pixelIndex = i / 4;
+      const x = pixelIndex % tempCanvas.width;
+      const y = Math.floor(pixelIndex / tempCanvas.width);
+      const isEdge = x < 5 || x > tempCanvas.width - 5 || y < 5 || y > tempCanvas.height - 5;
+      
+      if (isEdge && isDark) {
+        data[i + 3] = 0; // 가장자리의 어두운 픽셀도 투명하게
+      }
     }
     
-    // 추가: 가장자리 픽셀도 처리 (배경일 가능성이 높음)
-    const pixelIndex = i / 4;
-    const x = pixelIndex % tempCanvas.width;
-    const y = Math.floor(pixelIndex / tempCanvas.width);
-    const isEdge = x < 5 || x > tempCanvas.width - 5 || y < 5 || y > tempCanvas.height - 5;
+    // 수정된 이미지 데이터를 다시 캔버스에 그리기
+    tempCtx.putImageData(imageData, 0, 0);
     
-    if (isEdge && isDark) {
-      data[i + 3] = 0; // 가장자리의 어두운 픽셀도 투명하게
-    }
+    // 원본 이미지의 src를 수정된 캔버스의 데이터 URL로 변경
+    treeImage.src = tempCanvas.toDataURL();
+    
+    console.log('Black background removed from tree image with improved algorithm');
+  } catch (error) {
+    console.log('Background removal failed:', error);
   }
-  
-  // 수정된 이미지 데이터를 다시 캔버스에 그리기
-  tempCtx.putImageData(imageData, 0, 0);
-  
-  // 원본 이미지의 src를 수정된 캔버스의 데이터 URL로 변경
-  treeImage.src = tempCanvas.toDataURL();
-  
-  console.log('Black background removed from tree image with improved algorithm');
 }
 
 // 고급 배경 제거 함수 (색상 기반 마스킹)
 function removeBackgroundAdvanced(image) {
-  const tempCanvas = document.createElement('canvas');
-  const tempCtx = tempCanvas.getContext('2d');
-  
-  tempCanvas.width = image.width;
-  tempCanvas.height = image.height;
-  
-  tempCtx.drawImage(image, 0, 0);
-  
-  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imageData.data;
-  
-  // 색상 히스토그램 분석
-  const colorCounts = {};
-  for (let i = 0; i < data.length; i += 4) {
-    const r = Math.floor(data[i] / 10) * 10;
-    const g = Math.floor(data[i + 1] / 10) * 10;
-    const b = Math.floor(data[i + 2] / 10) * 10;
-    const colorKey = `${r},${g},${b}`;
-    colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
-  }
-  
-  // 가장 많이 나타나는 어두운 색상들을 배경으로 간주
-  const sortedColors = Object.entries(colorCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10); // 상위 10개 색상
-  
-  const backgroundColors = [];
-  sortedColors.forEach(([colorKey, count]) => {
-    const [r, g, b] = colorKey.split(',').map(Number);
-    const totalPixels = tempCanvas.width * tempCanvas.height;
-    const percentage = (count / totalPixels) * 100;
+  try {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
     
-    // 어두운 색상이고 전체의 5% 이상을 차지하면 배경으로 간주
-    if (r <= 120 && g <= 120 && b <= 120 && percentage > 5) {
-      backgroundColors.push({r, g, b, threshold: 30});
+    tempCanvas.width = image.width;
+    tempCanvas.height = image.height;
+    
+    tempCtx.drawImage(image, 0, 0);
+    
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imageData.data;
+    
+    // 색상 히스토그램 분석
+    const colorCounts = {};
+    for (let i = 0; i < data.length; i += 4) {
+      const r = Math.floor(data[i] / 10) * 10;
+      const g = Math.floor(data[i + 1] / 10) * 10;
+      const b = Math.floor(data[i + 2] / 10) * 10;
+      const colorKey = `${r},${g},${b}`;
+      colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
     }
-  });
-  
-  console.log('Detected background colors:', backgroundColors);
-  
-  // 배경 색상들을 투명하게 처리
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
     
-    let isBackground = false;
+    // 가장 많이 나타나는 어두운 색상들을 배경으로 간주
+    const sortedColors = Object.entries(colorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10); // 상위 10개 색상
     
-    // 각 배경 색상과 비교
-    backgroundColors.forEach(bgColor => {
-      const distance = Math.sqrt(
-        Math.pow(r - bgColor.r, 2) + 
-        Math.pow(g - bgColor.g, 2) + 
-        Math.pow(b - bgColor.b, 2)
-      );
+    const backgroundColors = [];
+    sortedColors.forEach(([colorKey, count]) => {
+      const [r, g, b] = colorKey.split(',').map(Number);
+      const totalPixels = tempCanvas.width * tempCanvas.height;
+      const percentage = (count / totalPixels) * 100;
       
-      if (distance <= bgColor.threshold) {
-        isBackground = true;
+      // 어두운 색상이고 전체의 5% 이상을 차지하면 배경으로 간주
+      if (r <= 120 && g <= 120 && b <= 120 && percentage > 5) {
+        backgroundColors.push({r, g, b, threshold: 30});
       }
     });
     
-    // 추가 조건: 가장자리 픽셀과 어두운 색상
-    const pixelIndex = i / 4;
-    const x = pixelIndex % tempCanvas.width;
-    const y = Math.floor(pixelIndex / tempCanvas.width);
-    const isEdge = x < 10 || x > tempCanvas.width - 10 || y < 10 || y > tempCanvas.height - 10;
+    console.log('Detected background colors:', backgroundColors);
     
-    if (isBackground || (isEdge && r <= 150 && g <= 150 && b <= 150)) {
-      data[i + 3] = 0; // 완전 투명
+    // 배경 색상들을 투명하게 처리
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      let isBackground = false;
+      
+      // 각 배경 색상과 비교
+      backgroundColors.forEach(bgColor => {
+        const distance = Math.sqrt(
+          Math.pow(r - bgColor.r, 2) + 
+          Math.pow(g - bgColor.g, 2) + 
+          Math.pow(b - bgColor.b, 2)
+        );
+        
+        if (distance <= bgColor.threshold) {
+          isBackground = true;
+        }
+      });
+      
+      // 추가 조건: 가장자리 픽셀과 어두운 색상
+      const pixelIndex = i / 4;
+      const x = pixelIndex % tempCanvas.width;
+      const y = Math.floor(pixelIndex / tempCanvas.width);
+      const isEdge = x < 10 || x > tempCanvas.width - 10 || y < 10 || y > tempCanvas.height - 10;
+      
+      if (isBackground || (isEdge && r <= 150 && g <= 150 && b <= 150)) {
+        data[i + 3] = 0; // 완전 투명
+      }
     }
+    
+    tempCtx.putImageData(imageData, 0, 0);
+    treeImage.src = tempCanvas.toDataURL();
+    
+    console.log('Advanced background removal completed');
+  } catch (error) {
+    console.log('Advanced background removal failed:', error);
   }
-  
-  tempCtx.putImageData(imageData, 0, 0);
-  treeImage.src = tempCanvas.toDataURL();
-  
-  console.log('Advanced background removal completed');
 }
 
 let TILE = 32;
@@ -194,7 +201,7 @@ const gameState = {
   score: 0,
   highScore: Number(localStorage.getItem('froggerHighScore') || '0'),
   running: true,
-  stage: 'month', // 'month' -> 'day'
+  stage: 'month', // 'month' -> 'day' -> 'time'
   overlay: null, // null | 'over' | 'clear'
 };
 
@@ -205,8 +212,26 @@ const hud = {
   restart: document.getElementById('restart'),
   mute: document.getElementById('mute'),
   stage: document.getElementById('stage'),
+  scoreboard: document.getElementById('scoreboard'),
+  playerStats: document.getElementById('playerStats'),
+  currentPlayer: document.getElementById('currentPlayer'),
 };
+
+// 플레이어 설정 관련 요소들
+const playerSetup = document.getElementById('playerSetup');
+const playerNameInput = document.getElementById('playerName');
+const startGameBtn = document.getElementById('startGame');
+
+// 현재 플레이어 이름 저장
+let currentPlayerName = '익명';
 const finalMessage = document.getElementById('finalMessage');
+
+// 순위 팝업 관련 요소들
+const rankingPopup = document.getElementById('rankingPopup');
+const closeRankingBtn = document.getElementById('closeRanking');
+const playAgainBtn = document.getElementById('playAgain');
+const viewDetailsBtn = document.getElementById('viewDetails');
+
 // ---- Audio ----
 class Sound {
   constructor() {
@@ -283,6 +308,287 @@ class Sound {
 
 const sound = new Sound();
 
+// 점수를 Supabase DB에 저장하는 함수
+async function saveScoreToDatabase(score, playerName = currentPlayerName) {
+  try {
+    const { data, error } = await supabase
+      .from('game_scores')
+      .insert([
+        {
+          score: score,
+          player_name: playerName,
+          game_date: new Date().toISOString(),
+          stage_completed: gameState.stage === 'day' // 게임을 완료했는지 여부
+        }
+      ]);
+
+    if (error) {
+      console.error('점수 저장 오류:', error);
+      return false;
+    }
+
+    console.log('점수가 성공적으로 저장되었습니다:', data);
+    return true;
+  } catch (err) {
+    console.error('점수 저장 중 예외 발생:', err);
+    return false;
+  }
+}
+
+// 상위 점수들을 가져오는 함수
+async function getTopScores(limit = 10) {
+  try {
+    const { data, error } = await supabase
+      .from('top_scores')
+      .select('*')
+      .limit(limit);
+
+    if (error) {
+      console.error('점수 조회 오류:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('점수 조회 중 예외 발생:', err);
+    return [];
+  }
+}
+
+// 개인별 누계 성적 조회 함수
+async function getPlayerStats(playerName) {
+  try {
+    const { data, error } = await supabase
+      .from('game_scores')
+      .select('*')
+      .eq('player_name', playerName)
+      .order('game_date', { ascending: false });
+
+    if (error) {
+      console.error('개인 성적 조회 오류:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        totalGames: 0,
+        totalScore: 0,
+        completedGames: 0,
+        averageScore: 0,
+        bestScore: 0,
+        recentGames: []
+      };
+    }
+
+    const totalGames = data.length;
+    const totalScore = data.reduce((sum, game) => sum + game.score, 0);
+    const completedGames = data.filter(game => game.stage_completed).length;
+    const averageScore = Math.round(totalScore / totalGames);
+    const bestScore = Math.max(...data.map(game => game.score));
+    const recentGames = data.slice(0, 5); // 최근 5게임
+
+    return {
+      totalGames,
+      totalScore,
+      completedGames,
+      averageScore,
+      bestScore,
+      recentGames
+    };
+  } catch (err) {
+    console.error('개인 성적 조회 중 예외 발생:', err);
+    return null;
+  }
+}
+
+// 전체 순위 조회 함수 (누계 점수 기준)
+async function getOverallRankings() {
+  try {
+    const { data, error } = await supabase
+      .from('game_scores')
+      .select('player_name, score, stage_completed');
+
+    if (error) {
+      console.error('전체 순위 조회 오류:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // 플레이어별 누계 점수 계산
+    const playerTotals = {};
+    data.forEach(game => {
+      if (!playerTotals[game.player_name]) {
+        playerTotals[game.player_name] = {
+          totalScore: 0,
+          totalGames: 0,
+          completedGames: 0
+        };
+      }
+      playerTotals[game.player_name].totalScore += game.score;
+      playerTotals[game.player_name].totalGames += 1;
+      if (game.stage_completed) {
+        playerTotals[game.player_name].completedGames += 1;
+      }
+    });
+
+    // 순위 정렬 (누계 점수 기준)
+    const rankings = Object.entries(playerTotals)
+      .map(([playerName, stats]) => ({
+        playerName,
+        ...stats,
+        averageScore: Math.round(stats.totalScore / stats.totalGames)
+      }))
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, 10); // 상위 10명
+
+    return rankings;
+  } catch (err) {
+    console.error('전체 순위 조회 중 예외 발생:', err);
+    return [];
+  }
+}
+
+// 점수 보드 표시 함수
+async function showScoreBoard() {
+  const scores = await getTopScores(5);
+  if (scores.length === 0) {
+    console.log('저장된 점수가 없습니다.');
+    return;
+  }
+
+  console.log('=== 상위 점수 ===');
+  scores.forEach((score, index) => {
+    const date = new Date(score.game_date).toLocaleDateString('ko-KR');
+    const stage = score.stage_completed ? '완료' : '미완료';
+    console.log(`${index + 1}위: ${score.score}점 (${score.player_name}) - ${date} - ${stage}`);
+  });
+}
+
+// 순위 팝업 표시 함수
+async function showRankingPopup() {
+  const playerStats = await getPlayerStats(currentPlayerName);
+  const overallRankings = await getOverallRankings();
+  
+  if (!playerStats) {
+    console.log('성적 조회에 실패했습니다.');
+    return;
+  }
+
+  // 개인 순위 찾기
+  const playerRank = overallRankings.findIndex(rank => rank.playerName === currentPlayerName) + 1;
+  
+  // 플레이어 정보 업데이트
+  document.getElementById('popupPlayerName').textContent = currentPlayerName;
+  document.getElementById('popupPlayerRank').textContent = playerRank > 0 ? `${playerRank}위` : '순위 없음';
+  document.getElementById('popupTotalScore').textContent = `${playerStats.totalScore}점`;
+  document.getElementById('popupTotalGames').textContent = `${playerStats.totalGames}게임`;
+  
+  const completionRate = playerStats.totalGames > 0 
+    ? Math.round((playerStats.completedGames / playerStats.totalGames) * 100) 
+    : 0;
+  document.getElementById('popupCompletionRate').textContent = `${completionRate}%`;
+  
+  // 순위 테이블 생성
+  const rankingTable = document.getElementById('rankingTable');
+  rankingTable.innerHTML = '';
+  
+  overallRankings.slice(0, 10).forEach((rank, index) => {
+    const isCurrentPlayer = rank.playerName === currentPlayerName;
+    const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+    
+    const row = document.createElement('div');
+    row.className = `ranking-row${isCurrentPlayer ? ' current-player' : ''}`;
+    
+    row.innerHTML = `
+      <div class="rank-number">
+        <span class="rank-medal">${rankIcon}</span> ${index + 1}
+      </div>
+      <div class="player-name-cell">${rank.playerName}${isCurrentPlayer ? ' 👤' : ''}</div>
+      <div class="score-cell">${rank.totalScore}점</div>
+      <div class="games-cell">${rank.totalGames}회</div>
+      <div class="avg-cell">${rank.averageScore}점</div>
+    `;
+    
+    rankingTable.appendChild(row);
+  });
+  
+  // 팝업 표시
+  rankingPopup.classList.remove('hidden');
+  
+  // 콘솔에도 출력 (백업)
+  console.log('\n' + '='.repeat(50));
+  console.log('🎮 게임 종료 - 누계 성적 조회');
+  console.log('='.repeat(50));
+  console.log(`👤 플레이어: ${currentPlayerName}`);
+  console.log(`🏆 전체 순위: ${playerRank > 0 ? playerRank + '위' : '순위 없음'}`);
+  console.log(`💯 누계 점수: ${playerStats.totalScore}점`);
+  console.log('='.repeat(50) + '\n');
+}
+
+// 순위 팝업 닫기 함수
+function closeRankingPopup() {
+  rankingPopup.classList.add('hidden');
+}
+
+// 성적 조회 화면 표시 함수 (개선된 버전)
+async function showPlayerStatsScreen() {
+  const playerStats = await getPlayerStats(currentPlayerName);
+  const overallRankings = await getOverallRankings();
+  
+  if (!playerStats) {
+    console.log('성적 조회에 실패했습니다.');
+    return;
+  }
+
+  // 개인 순위 찾기
+  const playerRank = overallRankings.findIndex(rank => rank.playerName === currentPlayerName) + 1;
+  
+  console.log('\n' + '='.repeat(50));
+  console.log('🎮 게임 종료 - 누계 성적 조회');
+  console.log('='.repeat(50));
+  
+  // 현재 플레이어 정보
+  console.log(`👤 플레이어: ${currentPlayerName}`);
+  console.log(`🏆 전체 순위: ${playerRank > 0 ? playerRank + '위' : '순위 없음'}`);
+  console.log(`📊 총 게임 수: ${playerStats.totalGames}게임`);
+  console.log(`💯 누계 점수: ${playerStats.totalScore}점`);
+  console.log(`✅ 완료한 게임: ${playerStats.completedGames}게임`);
+  console.log(`📈 평균 점수: ${playerStats.averageScore}점`);
+  console.log(`⭐ 최고 점수: ${playerStats.bestScore}점`);
+  
+  // 최근 게임 기록
+  if (playerStats.recentGames.length > 0) {
+    console.log('\n📋 최근 게임 기록:');
+    playerStats.recentGames.forEach((game, index) => {
+      const date = new Date(game.game_date).toLocaleDateString('ko-KR');
+      const stage = game.stage_completed ? '✅완료' : '❌미완료';
+      const medal = game.score >= 400 ? '🥇' : game.score >= 200 ? '🥈' : '🥉';
+      console.log(`   ${index + 1}. ${medal} ${game.score}점 - ${date} - ${stage}`);
+    });
+  }
+  
+  // 전체 순위표
+  if (overallRankings.length > 0) {
+    console.log('\n🏆 전체 순위 (누계 점수 기준):');
+    console.log('순위 | 플레이어명 | 누계점수 | 게임수 | 평균점수');
+    console.log('-'.repeat(50));
+    
+    overallRankings.slice(0, 10).forEach((rank, index) => {
+      const isCurrentPlayer = rank.playerName === currentPlayerName;
+      const marker = isCurrentPlayer ? ' 👤' : '';
+      const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+      
+      console.log(`${rankIcon} ${String(index + 1).padStart(2)}위 | ${rank.playerName.padEnd(8)} | ${String(rank.totalScore).padStart(6)}점 | ${String(rank.totalGames).padStart(4)}게임 | ${String(rank.averageScore).padStart(6)}점${marker}`);
+    });
+  }
+  
+  console.log('='.repeat(50));
+  console.log('게임을 다시 시작하려면 "다시 시작" 버튼을 클릭하세요!');
+  console.log('='.repeat(50) + '\n');
+}
 
 hud.high.textContent = gameState.highScore.toString();
 hud.stage.textContent = '월 선택';
@@ -316,12 +622,12 @@ class Frog {
       }
     }
   }
-  die() {
+  async die() {
     gameState.lives -= 1;
     hud.lives.textContent = gameState.lives.toString();
     if (gameState.lives <= 0) {
       sound.gameOver();
-      gameOver();
+      await gameOver();
     } else {
       sound.die();
       this.reset();
@@ -547,23 +853,61 @@ function createLane(row, count, speed, kind) {
 
 const frog = new Frog();
 
-// 도로 구간 (충돌 시 즉사)
+// 도로 구간 (충돌 시 즉사) - 시간 레벨에서는 더 어렵게
 const roadLanes = [
   { row: 10, speed: 80, count: 3, dir: 1 },
   { row: 9,  speed: -120, count: 2, dir: -1 },
   { row: 8,  speed: 100, count: 3, dir: 1 },
   { row: 7,  speed: -140, count: 3, dir: -1 },
 ];
-const roads = roadLanes.map(l => createLane(l.row, l.count, l.speed, 'car'));
 
-// 물길 구간 (통나무 위에 있어야 생존)
-const waterLanes = [
-  { row: 6, speed: 60, count: 3 },
-  { row: 5, speed: -80, count: 2 },
-  { row: 4, speed: 70, count: 3 },
-  { row: 3, speed: -90, count: 2 },
+// 시간 레벨용 어려운 도로 구간
+const timeRoadLanes = [
+  { row: 10, speed: 120, count: 4, dir: 1 },
+  { row: 9,  speed: -160, count: 3, dir: -1 },
+  { row: 8,  speed: 140, count: 4, dir: 1 },
+  { row: 7,  speed: -180, count: 4, dir: -1 },
+  // row 6은 이제 물길로 변경됨
 ];
-const logs = waterLanes.map(l => createLane(l.row, l.count, l.speed, 'log'));
+
+// 물길 구간 (통나무 위에 있어야 생존) - 첫번째 칸에 통나무 추가
+const waterLanes = [
+  { row: 6, speed: 50, count: 2 },  // 첫번째 칸에 통나무 추가
+  { row: 5, speed: 60, count: 3 },
+  { row: 4, speed: -80, count: 2 },
+  { row: 3, speed: 70, count: 3 },
+  // row 2는 상단 연못과 너무 가까워서 제거
+];
+
+// 시간 레벨용 어려운 물길 구간 - 첫번째 칸에 통나무 추가
+const timeWaterLanes = [
+  { row: 6, speed: 70, count: 2 },  // 첫번째 칸에 통나무 추가
+  { row: 5, speed: 90, count: 2 },
+  { row: 4, speed: -110, count: 2 },
+  { row: 3, speed: 100, count: 2 },
+  // row 2는 상단 연못과 너무 가까워서 제거
+];
+
+// 현재 레벨에 따른 도로와 물길 설정
+function initializeLanes() {
+  try {
+    if (gameState.stage === 'time') {
+      roads = timeRoadLanes.map(l => createLane(l.row, l.count, l.speed, 'car'));
+      logs = timeWaterLanes.map(l => createLane(l.row, l.count, l.speed, 'log'));
+    } else {
+      roads = roadLanes.map(l => createLane(l.row, l.count, l.speed, 'car'));
+      logs = waterLanes.map(l => createLane(l.row, l.count, l.speed, 'log'));
+    }
+    console.log('Lanes initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize lanes:', error);
+    // 기본값으로 빈 배열 설정
+    roads = [];
+    logs = [];
+  }
+}
+
+let roads, logs;
 
 function drawBackground() {
   ctx.fillStyle = COLORS.background;
@@ -575,16 +919,38 @@ function drawBackground() {
   // 상단 집 슬롯(스테이지별 표시)
   drawHomeSlots();
 
-  // 물길 - 강물 그라데이션과 물결 패턴
-  drawWaterArea(0, TILE * 3, canvas.width, TILE * 4);
+  // 물길 - 강물 그라데이션과 물결 패턴 (row 3-6)
+  let waterStartY, waterHeight;
+  if (gameState.stage === 'time') {
+    waterStartY = TILE * 3;  // row 3부터 시작
+    waterHeight = TILE * 4;  // row 3-6, 4칸
+  } else {
+    waterStartY = TILE * 3;  // row 3부터 시작
+    waterHeight = TILE * 4;  // row 3-6, 4칸
+  }
+  drawWaterArea(0, waterStartY, canvas.width, waterHeight);
 
   // 도로
+  let roadStartY, roadHeight;
+  if (gameState.stage === 'time') {
+    roadStartY = TILE * 7;  // row 7부터 시작
+    roadHeight = TILE * 4;   // 시간 레벨은 도로가 더 많음
+  } else {
+    roadStartY = TILE * 7;  // row 7부터 시작
+    roadHeight = TILE * 4;
+  }
   ctx.fillStyle = COLORS.road;
-  ctx.fillRect(0, TILE * 7, canvas.width, TILE * 4);
+  ctx.fillRect(0, roadStartY, canvas.width, roadHeight);
 
   // 하단 잔디
+  let grassStartY;
+  if (gameState.stage === 'time') {
+    grassStartY = TILE * 11;
+  } else {
+    grassStartY = TILE * 11;
+  }
   ctx.fillStyle = COLORS.grass;
-  ctx.fillRect(0, TILE * 11, canvas.width, TILE * 5);
+  ctx.fillRect(0, grassStartY, canvas.width, TILE * 5);
 }
 
 function drawWaterArea(x, y, width, height) {
@@ -632,7 +998,15 @@ function drawWaterArea(x, y, width, height) {
 }
 
 function getHomeSlotConfig() {
-  const slots = gameState.stage === 'month' ? 12 : 11; // days 10~20 inclusive -> 11
+  let slots;
+  if (gameState.stage === 'month') {
+    slots = 12; // 1월~12월
+  } else if (gameState.stage === 'day') {
+    slots = 11; // 10일~20일 inclusive
+  } else if (gameState.stage === 'time') {
+    slots = 12; // 1~12시
+  }
+  
   const margin = TILE * 0.5;
   const slotW = (canvas.width - margin * 2) / slots;
   const slotH = TILE * 1.4;
@@ -643,14 +1017,21 @@ function getHomeSlotConfig() {
 function drawHomeSlots() {
   const { slots, margin, slotW, slotH, y } = getHomeSlotConfig();
   const labels = [];
+  
   if (gameState.stage === 'month') {
     for (let m = 1; m <= 12; m++) labels.push(`${m}월`);
-  } else {
+  } else if (gameState.stage === 'day') {
     for (let d = 10; d <= 20; d++) labels.push(`${d}일`);
+  } else if (gameState.stage === 'time') {
+    for (let h = 1; h <= 12; h++) {
+      labels.push(`${h}`);
+    }
   }
+  
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `${Math.floor(TILE * 0.5)}px sans-serif`;
+  
   for (let i = 0; i < slots; i++) {
     const x = margin + slotW * i + slotW / 2;
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
@@ -680,41 +1061,76 @@ function aabb(x, y, w, h, px, py, pr) {
   return dx * dx + dy * dy <= pr * pr;
 }
 
-function update(dt) {
+async function update(dt) {
   if (!gameState.running) return;
 
-  // 이동체 업데이트
-  roads.forEach(lane => lane.forEach(e => e.update(dt)));
-  logs.forEach(lane => lane.forEach(e => e.update(dt)));
+  // 이동체 업데이트 (안전하게 처리)
+  if (roads && Array.isArray(roads)) {
+    roads.forEach(lane => {
+      if (lane && Array.isArray(lane)) {
+        lane.forEach(e => e.update(dt));
+      }
+    });
+  }
+  
+  if (logs && Array.isArray(logs)) {
+    logs.forEach(lane => {
+      if (lane && Array.isArray(lane)) {
+        lane.forEach(e => e.update(dt));
+      }
+    });
+  }
 
   const wasOnLog = !!frog.onLog;
   frog.onLog = null;
 
   // 도로 충돌 체크
-  for (const lane of roads) {
-    for (const car of lane) {
-      if (aabb(car.x, car.y, car.width, car.height, frog.x, frog.y, TILE * 0.35)) {
-        frog.die();
-        return;
+  if (roads && Array.isArray(roads)) {
+    for (const lane of roads) {
+      if (lane && Array.isArray(lane)) {
+        for (const car of lane) {
+          if (car && aabb(car.x, car.y, car.width, car.height, frog.x, frog.y, TILE * 0.35)) {
+            await frog.die();
+            return;
+          }
+        }
       }
     }
   }
 
   // 물길 생존 체크
-  if (frog.row >= 3 && frog.row <= 6) {
+  let waterStartRow, waterEndRow;
+  if (gameState.stage === 'time') {
+    waterStartRow = 3;  // row 2 제거
+    waterEndRow = 6;    // row 6 포함
+  } else {
+    waterStartRow = 3;  // row 2 제거
+    waterEndRow = 6;    // row 6 포함
+  }
+  
+  // 디버깅: 현재 개구리 위치와 물길 범위 출력
+  if (frog.row === 2) {
+    console.log(`개구리가 row 2에 있음 - 안전한 공간 (물길 범위: ${waterStartRow}-${waterEndRow})`);
+  }
+  
+  if (frog.row >= waterStartRow && frog.row <= waterEndRow) {
     let onLog = false;
-    for (const lane of logs) {
-      for (const log of lane) {
-        if (aabb(log.x, log.y, log.width, log.height, frog.x, frog.y, TILE * 0.35)) {
-          onLog = true;
-          frog.onLog = log;
-          break;
+    if (logs && Array.isArray(logs)) {
+      for (const lane of logs) {
+        if (lane && Array.isArray(lane)) {
+          for (const log of lane) {
+            if (log && aabb(log.x, log.y, log.width, log.height, frog.x, frog.y, TILE * 0.35)) {
+              onLog = true;
+              frog.onLog = log;
+              break;
+            }
+          }
         }
+        if (onLog) break;
       }
-      if (onLog) break;
     }
     if (!onLog) {
-      frog.die();
+      await frog.die();
       return;
     }
     if (!wasOnLog && onLog) {
@@ -724,7 +1140,7 @@ function update(dt) {
 
   // 목표 도달(연못)
   if (frog.row <= HOME_ROW) {
-    // 스테이지 로직: 월 -> 일
+    // 스테이지 로직: 월 -> 일 -> 시간
     if (gameState.stage === 'month') {
       const idx = getSelectedHomeIndex(frog.x);
       const correct = 10; // 11월은 0-based index 10
@@ -734,23 +1150,42 @@ function update(dt) {
         sound.score();
         gameState.stage = 'day';
         hud.stage.textContent = '일 선택';
+        // 레벨 변경 시 장애물 재초기화
+        initializeLanes();
       } else {
         sound.die();
-        frog.die();
+        await frog.die();
       }
       frog.reset();
-    } else {
+    } else if (gameState.stage === 'day') {
       // day: 10~20 -> index 0..10, 정답 16일 -> index 6
       const correct = 6;
       const idx = getSelectedHomeIndex(frog.x);
       if (idx === correct) {
-        gameState.score += 300;
+        gameState.score += 200;
         hud.score.textContent = gameState.score.toString();
         sound.score();
-        gameClear();
+        gameState.stage = 'time';
+        hud.stage.textContent = '시간 선택';
+        // 레벨 변경 시 장애물 재초기화
+        initializeLanes();
       } else {
         sound.die();
-        frog.die();
+        await frog.die();
+        frog.reset();
+      }
+    } else if (gameState.stage === 'time') {
+      // time: 1~12 -> index 0..11, 정답 3시 -> index 2
+      const correct = 2;
+      const idx = getSelectedHomeIndex(frog.x);
+      if (idx === correct) {
+        gameState.score += 500; // 시간 레벨은 더 많은 점수
+        hud.score.textContent = gameState.score.toString();
+        sound.score();
+        await gameClear();
+      } else {
+        sound.die();
+        await frog.die();
         frog.reset();
       }
     }
@@ -771,9 +1206,22 @@ function update(dt) {
 function draw() {
   drawBackground();
 
-  // 이동체
-  roads.forEach(lane => lane.forEach(e => e.draw()));
-  logs.forEach(lane => lane.forEach(e => e.draw()));
+  // 이동체 (안전하게 처리)
+  if (roads && Array.isArray(roads)) {
+    roads.forEach(lane => {
+      if (lane && Array.isArray(lane)) {
+        lane.forEach(e => e.draw());
+      }
+    });
+  }
+  
+  if (logs && Array.isArray(logs)) {
+    logs.forEach(lane => {
+      if (lane && Array.isArray(lane)) {
+        lane.forEach(e => e.draw());
+      }
+    });
+  }
 
   // 격자 가이드 (연한 라인)
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -804,7 +1252,7 @@ function draw() {
     ctx.font = 'bold 20px sans-serif';
     ctx.fillText('정답! 알함브라기타앙상블 연주회', canvas.width / 2, canvas.height / 2 - 24);
     ctx.font = 'bold 22px sans-serif';
-    ctx.fillText('11월 16일', canvas.width / 2, canvas.height / 2 + 6);
+    ctx.fillText('11월 16일 3시', canvas.width / 2, canvas.height / 2 + 6);
     ctx.font = '14px sans-serif';
     ctx.fillText('다시 시작을 누르세요', canvas.width / 2, canvas.height / 2 + 34);
     // 하단 DOM 오버레이는 별도로 표시
@@ -812,15 +1260,15 @@ function draw() {
 }
 
 let last = 0;
-function loop(ts) {
+async function loop(ts) {
   const dt = Math.min(0.05, (ts - last) / 1000);
   last = ts;
-  update(dt);
+  await update(dt);
   draw();
   requestAnimationFrame(loop);
 }
 
-function gameOver() {
+async function gameOver() {
   gameState.running = false;
   gameState.overlay = 'over';
   hud.restart.classList.remove('hidden');
@@ -828,13 +1276,74 @@ function gameOver() {
   gameState.highScore = Math.max(gameState.highScore, gameState.score);
   localStorage.setItem('froggerHighScore', gameState.highScore.toString());
   hud.high.textContent = gameState.highScore.toString();
+  
+  // 점수를 DB에 저장
+  const saved = await saveScoreToDatabase(gameState.score);
+  if (saved) {
+    console.log('💾 게임 오버 - 점수가 DB에 저장되었습니다');
+    console.log(`🎯 이번 게임 점수: ${gameState.score}점`);
+    
+    // 잠시 후 순위 팝업 표시
+    setTimeout(async () => {
+      await showRankingPopup();
+    }, 1000);
+  } else {
+    console.log('❌ 게임 오버 - 점수 저장 실패');
+  }
+  
+  // 게임 오버 후 잠시 후 플레이어 설정 화면 표시
+  setTimeout(() => {
+    playerSetup.classList.remove('hidden');
+    playerNameInput.value = currentPlayerName; // 현재 이름으로 초기화
+    playerNameInput.focus();
+  }, 3000);
 }
 
-function gameClear() {
+async function gameClear() {
   gameState.running = false;
   gameState.overlay = 'clear';
   hud.restart.classList.remove('hidden');
   if (finalMessage) finalMessage.classList.remove('hidden');
+  
+  // 게임 클리어 시 점수를 DB에 저장
+  const saved = await saveScoreToDatabase(gameState.score);
+  if (saved) {
+    console.log('🎉 게임 클리어 - 점수가 DB에 저장되었습니다');
+    console.log(`🏆 이번 게임 점수: ${gameState.score}점 (완료!)`);
+    
+    // 잠시 후 순위 팝업 표시
+    setTimeout(async () => {
+      await showRankingPopup();
+    }, 1500);
+  } else {
+    console.log('❌ 게임 클리어 - 점수 저장 실패');
+  }
+  
+  // 게임 클리어 후 잠시 후 플레이어 설정 화면 표시
+  setTimeout(() => {
+    playerSetup.classList.remove('hidden');
+    playerNameInput.value = currentPlayerName; // 현재 이름으로 초기화
+    playerNameInput.focus();
+  }, 5000);
+}
+
+// 게임 시작 함수
+function startGame() {
+  const name = playerNameInput.value.trim();
+  if (name) {
+    currentPlayerName = name;
+  } else {
+    currentPlayerName = '익명';
+  }
+  
+  // 플레이어 이름을 HUD에 표시
+  hud.currentPlayer.textContent = currentPlayerName;
+  
+  // 플레이어 설정 화면 숨기기
+  playerSetup.classList.add('hidden');
+  
+  // 게임 시작
+  restart();
 }
 
 function restart() {
@@ -849,6 +1358,10 @@ function restart() {
   hud.restart.classList.add('hidden');
   frog.reset();
   if (finalMessage) finalMessage.classList.add('hidden');
+  
+  // 장애물 초기화
+  initializeLanes();
+  
   sound.resumeIfSuspended().then(() => sound.startBgm());
 }
 
@@ -857,6 +1370,19 @@ window.addEventListener('keydown', (e) => {
     restart();
     return;
   }
+  
+  // 점수 보드 표시 (S 키)
+  if (e.key === 's' || e.key === 'S') {
+    showScoreBoard();
+    return;
+  }
+  
+  // 성적 조회 (P 키)
+  if (e.key === 'p' || e.key === 'P') {
+    showPlayerStatsScreen();
+    return;
+  }
+  
   switch (e.key) {
     case 'ArrowUp': sound.jump(); frog.move(0, -1); break;
     case 'ArrowDown': frog.move(0, 1); break;
@@ -865,7 +1391,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-hud.restart.addEventListener('click', restart);
+hud.restart.addEventListener('click', () => {
+  playerSetup.classList.remove('hidden');
+  playerNameInput.value = currentPlayerName;
+  playerNameInput.focus();
+});
 hud.mute.addEventListener('click', () => {
   sound.muted = !sound.muted;
   hud.mute.textContent = sound.muted ? '🔈 소리 켜기' : '🔊 소리 끄기';
@@ -874,6 +1404,38 @@ hud.mute.addEventListener('click', () => {
   } else {
     sound.resumeIfSuspended().then(() => sound.startBgm());
   }
+});
+hud.scoreboard.addEventListener('click', showScoreBoard);
+hud.playerStats.addEventListener('click', showPlayerStatsScreen);
+
+// 플레이어 설정 관련 이벤트 리스너
+startGameBtn.addEventListener('click', startGame);
+
+// Enter 키로 게임 시작
+playerNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    startGame();
+  }
+});
+
+// 페이지 로드 시 플레이어 이름 입력에 포커스
+window.addEventListener('load', () => {
+  playerNameInput.focus();
+});
+
+// 순위 팝업 버튼 이벤트 리스너
+closeRankingBtn.addEventListener('click', closeRankingPopup);
+
+playAgainBtn.addEventListener('click', () => {
+  closeRankingPopup();
+  playerSetup.classList.remove('hidden');
+  playerNameInput.value = currentPlayerName;
+  playerNameInput.focus();
+});
+
+viewDetailsBtn.addEventListener('click', () => {
+  closeRankingPopup();
+  showPlayerStatsScreen();
 });
 
 requestAnimationFrame(loop);

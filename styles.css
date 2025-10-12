@@ -1,10 +1,96 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; background: #0b1021; color: #e9eef7; display: flex; flex-direction: column; align-items: center; }
+
+/* 플레이어 설정 화면 */
+.player-setup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 2000;
+}
+
+.player-setup.hidden {
+  display: none;
+}
+
+.setup-box {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  max-width: 400px;
+  width: 90%;
+}
+
+.setup-box h2 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #e9eef7;
+}
+
+.setup-box p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+#playerName {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #e9eef7;
+  margin-bottom: 20px;
+  transition: border-color 0.3s ease;
+}
+
+#playerName:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#playerName::placeholder {
+  color: #64748b;
+}
+
+#startGame {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+#startGame:hover {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+#startGame:active {
+  transform: translateY(0);
+}
+
 .hud { margin: 16px 0 8px; text-align: center; }
 .title { font-weight: 800; font-size: 20px; margin-bottom: 6px; }
 .info { font-size: 13px; opacity: .85; margin-bottom: 8px; }
 .stats { font-size: 14px; margin-bottom: 8px; }
-#restart, #mute { padding: 8px 12px; font-weight: 700; border: 0; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; }
+#restart, #mute, #scoreboard, #playerStats { padding: 8px 12px; font-weight: 700; border: 0; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; }
 #restart.hidden { display: none; }
 .controls { display: flex; gap: 8px; justify-content: center; }
 
@@ -15,6 +101,287 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
 .final-line { font-size: 18px; text-align: center; line-height: 1.8; }
 .final-important { font-weight: 800; font-size: 20px; margin-top: 4px; }
 .highlight { color: #ffb703; text-shadow: 0 0 6px rgba(255,183,3,.6); }
+
+/* 순위 팝업 스타일 */
+.ranking-popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 3000;
+  padding: 20px;
+}
+
+.ranking-popup.hidden {
+  display: none;
+}
+
+.ranking-box {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: popupSlideIn 0.3s ease-out;
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ranking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+.ranking-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #e9eef7;
+  text-align: center;
+  flex: 1;
+}
+
+.close-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+.player-info {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.current-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.player-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.player-rank {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #e9eef7;
+}
+
+.ranking-list h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e9eef7;
+  text-align: center;
+}
+
+.ranking-table {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 80px 60px 80px;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.ranking-row:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.ranking-row.current-player {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.ranking-row:last-child {
+  border-bottom: none;
+}
+
+.rank-number {
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+}
+
+.rank-medal {
+  font-size: 20px;
+}
+
+.player-name-cell {
+  font-weight: 600;
+  color: #e9eef7;
+}
+
+.current-player .player-name-cell {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.score-cell, .games-cell, .avg-cell {
+  text-align: center;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.current-player .score-cell, 
+.current-player .games-cell, 
+.current-player .avg-cell {
+  color: #e9eef7;
+  font-weight: 600;
+}
+
+.ranking-footer {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+.play-again-btn, .details-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.play-again-btn {
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.play-again-btn:hover {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.details-btn {
+  background: linear-gradient(145deg, #10b981, #059669);
+  color: white;
+}
+
+.details-btn:hover {
+  background: linear-gradient(145deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .ranking-box {
+    padding: 20px;
+    margin: 10px;
+  }
+  
+  .ranking-header h2 {
+    font-size: 20px;
+  }
+  
+  .player-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .ranking-row {
+    grid-template-columns: 50px 1fr 70px 50px 70px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .ranking-footer {
+    flex-direction: column;
+  }
+  
+  .play-again-btn, .details-btn {
+    width: 100%;
+  }
+}
 
 /* 모바일용 가상 키보드 */
 .virtual-keyboard {
