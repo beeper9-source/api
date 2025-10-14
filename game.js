@@ -1064,7 +1064,16 @@ function drawHomeSlots() {
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(x - slotW / 2 + 4, y - slotH / 2, slotW - 8, slotH);
     ctx.fillStyle = COLORS.text;
-    ctx.fillText(labels[i], x, y);
+    
+    if (gameState.stage === 'time') {
+      // 시간 스테이지에서는 숫자와 "시"를 분리해서 표시
+      ctx.fillText(labels[i], x, y - TILE * 0.15); // 숫자
+      ctx.font = `${Math.floor(TILE * 0.3)}px sans-serif`; // 더 작은 폰트
+      ctx.fillText('시', x, y + TILE * 0.15); // "시" 텍스트
+      ctx.font = `${Math.floor(TILE * 0.5)}px sans-serif`; // 폰트 원복
+    } else {
+      ctx.fillText(labels[i], x, y);
+    }
   }
 }
 
