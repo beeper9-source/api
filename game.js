@@ -20,6 +20,22 @@ treeImage.onerror = function() {
   console.log('Failed to load tree image, using fallback design for logs');
 };
 
+// 트럭 이미지들 로드
+const truckImages = [];
+const truckImageFiles = ['truck1.JPG', 'truck2.JPG', 'truck3.JPG'];
+
+truckImageFiles.forEach((filename, index) => {
+  const truckImage = new Image();
+  truckImage.src = filename;
+  truckImage.onload = function() {
+    console.log(`Truck image ${index + 1} loaded successfully`);
+  };
+  truckImage.onerror = function() {
+    console.log(`Failed to load truck image ${index + 1}, using fallback design`);
+  };
+  truckImages.push(truckImage);
+});
+
 // 검정색 배경을 제거하는 함수
 function removeBlackBackground(image) {
   try {
@@ -188,8 +204,8 @@ recalcTile();
 const COLORS = {
   background: '#10162f',
   grass: '#1f2937',
-  water: '#0ea5e9',
-  road: '#111827',
+  water: 'rgba(0, 3, 41)',
+  road: 'rgba(207, 245, 254)',
   frog: '#22c55e',
   car: '#ef4444',
   log: '#f59e0b',
@@ -610,7 +626,7 @@ class Frog {
     this.row = Math.max(0, Math.min(ROWS - 1, this.row + dy));
     this.x = this.col * TILE + TILE / 2;
     this.y = this.row * TILE + TILE / 2;
-    this.onLog = null;
+    // 통나무 탑승 상태는 move에서 초기화하지 않음 - update에서 처리
     sound.move();
   }
   update(dt) {
@@ -677,6 +693,8 @@ class Entity {
     this.speed = speed;
     this.color = color;
     this.type = type;
+    // 트럭 이미지 인덱스 (car 타입일 때만 사용)
+    this.truckImageIndex = type === 'car' ? Math.floor(Math.random() * truckImages.length) : 0;
   }
   update(dt) {
     this.x += this.speed * dt;
@@ -829,8 +847,22 @@ class Entity {
   }
   
   drawCar() {
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+    // 트럭 이미지가 로드되었는지 확인
+    const truckImage = truckImages[this.truckImageIndex];
+    if (truckImage && truckImage.complete && truckImage.naturalWidth > 0) {
+      // 트럭 이미지 그리기
+      ctx.drawImage(
+        truckImage,
+        this.x - this.width / 2,
+        this.y - this.height / 2,
+        this.width,
+        this.height
+      );
+    } else {
+      // 이미지가 로드되지 않았을 때는 기존 빨간색 사각형 사용
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+    }
   }
 }
 
@@ -870,7 +902,7 @@ const timeRoadLanes = [
   // row 6은 이제 물길로 변경됨
 ];
 
-// 물길 구간 (통나무 위에 있어야 생존) - 첫번째 칸에 통나무 추가
+// 물길 구간 (통나무 위에 있어야 생존) - 총 4줄
 const waterLanes = [
   { row: 6, speed: 50, count: 2 },  // 첫번째 칸에 통나무 추가
   { row: 5, speed: 60, count: 3 },
@@ -879,7 +911,7 @@ const waterLanes = [
   // row 2는 상단 연못과 너무 가까워서 제거
 ];
 
-// 시간 레벨용 어려운 물길 구간 - 첫번째 칸에 통나무 추가
+// 시간 레벨용 어려운 물길 구간 - 총 4줄
 const timeWaterLanes = [
   { row: 6, speed: 70, count: 2 },  // 첫번째 칸에 통나무 추가
   { row: 5, speed: 90, count: 2 },
@@ -954,13 +986,8 @@ function drawBackground() {
 }
 
 function drawWaterArea(x, y, width, height) {
-  // 물 그라데이션 배경
-  const gradient = ctx.createLinearGradient(x, y, x, y + height);
-  gradient.addColorStop(0, '#0ea5e9');  // 밝은 파란색 (수면)
-  gradient.addColorStop(0.5, '#0284c7'); // 중간 파란색
-  gradient.addColorStop(1, '#0369a1');   // 어두운 파란색 (깊은 곳)
-  
-  ctx.fillStyle = gradient;
+  // 물 배경 (단색으로 변경)
+  ctx.fillStyle = COLORS.water;
   ctx.fillRect(x, y, width, height);
   
   // 물결 패턴 추가
@@ -1082,7 +1109,7 @@ async function update(dt) {
   }
 
   const wasOnLog = !!frog.onLog;
-  frog.onLog = null;
+  // frog.onLog은 통나무 탑승 체크 후에만 초기화됨
 
   // 도로 충돌 체크
   if (roads && Array.isArray(roads)) {
@@ -1101,10 +1128,10 @@ async function update(dt) {
   // 물길 생존 체크
   let waterStartRow, waterEndRow;
   if (gameState.stage === 'time') {
-    waterStartRow = 3;  // row 2 제거
+    waterStartRow = 3;  // row 3부터 시작
     waterEndRow = 6;    // row 6 포함
   } else {
-    waterStartRow = 3;  // row 2 제거
+    waterStartRow = 3;  // row 3부터 시작
     waterEndRow = 6;    // row 6 포함
   }
   
@@ -1130,12 +1157,16 @@ async function update(dt) {
       }
     }
     if (!onLog) {
+      frog.onLog = null; // 통나무 탑승 상태 초기화
       await frog.die();
       return;
     }
     if (!wasOnLog && onLog) {
       sound.logMount();
     }
+  } else {
+    // 물길이 아닌 곳에서는 통나무 탑승 상태 초기화
+    frog.onLog = null;
   }
 
   // 목표 도달(연못)

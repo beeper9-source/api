@@ -35,3 +35,4 @@ SELECT
 FROM game_scores
 ORDER BY score DESC
 LIMIT 100;
+
