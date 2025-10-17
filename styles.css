@@ -63,17 +63,27 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, Bl
   color: #64748b;
 }
 
-#startGame {
+.setup-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#startGame, #showRankingBeforeStart {
   padding: 12px 24px;
   font-size: 16px;
   font-weight: 700;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(145deg, #3b82f6, #2563eb);
   color: white;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  flex: 1;
+}
+
+#startGame {
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
 }
 
 #startGame:hover {
@@ -82,7 +92,17 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, Bl
   transform: translateY(-2px);
 }
 
-#startGame:active {
+#showRankingBeforeStart {
+  background: linear-gradient(145deg, #f59e0b, #d97706);
+}
+
+#showRankingBeforeStart:hover {
+  background: linear-gradient(145deg, #d97706, #b45309);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  transform: translateY(-2px);
+}
+
+#startGame:active, #showRankingBeforeStart:active {
   transform: translateY(0);
 }
 
@@ -354,6 +374,15 @@ canvas { border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 1p
 
 /* 모바일 반응형 */
 @media (max-width: 768px) {
+  .setup-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  #startGame, #showRankingBeforeStart {
+    width: 100%;
+  }
+  
   .ranking-box {
     padding: 20px;
     margin: 10px;

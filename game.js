@@ -237,6 +237,7 @@ const hud = {
 const playerSetup = document.getElementById('playerSetup');
 const playerNameInput = document.getElementById('playerName');
 const startGameBtn = document.getElementById('startGame');
+const showRankingBeforeStartBtn = document.getElementById('showRankingBeforeStart');
 
 // 현재 플레이어 이름 저장
 let currentPlayerName = '익명';
@@ -290,18 +291,55 @@ class Sound {
     this.playTone(820, 70, 'square', 0.04);
   }
   score() {
-    this.playTone(1046, 120, 'triangle', 0.06);
+    // 성공 시 상승하는 멜로디
+    this.playTone(523, 80, 'triangle', 0.05);  // C5
+    setTimeout(() => this.playTone(659, 80, 'triangle', 0.05), 90);  // E5
+    setTimeout(() => this.playTone(784, 120, 'triangle', 0.06), 180); // G5
   }
   die() {
-    this.playTone(180, 220, 'sawtooth', 0.08);
+    // 일반적인 실패 시 하강하는 음계
+    this.playTone(392, 100, 'sawtooth', 0.08);  // G4
+    setTimeout(() => this.playTone(349, 100, 'sawtooth', 0.08), 110); // F4
+    setTimeout(() => this.playTone(294, 150, 'sawtooth', 0.08), 220); // D4
+  }
+  carCrash() {
+    // 차에 치였을 때 충돌음
+    this.playTone(180, 200, 'square', 0.1);
+    setTimeout(() => this.playTone(120, 300, 'square', 0.1), 210);
+  }
+  wrongSlot() {
+    // 잘못된 슬롯에 도착했을 때 경고음
+    this.playTone(330, 100, 'triangle', 0.06);  // E4
+    setTimeout(() => this.playTone(220, 150, 'triangle', 0.06), 110); // A3
   }
   gameOver() {
-    this.playTone(150, 500, 'square', 0.06);
+    // 게임 오버 시 긴 저음
+    this.playTone(147, 800, 'square', 0.08);  // D3
+  }
+  success() {
+    // 스테이지 클리어 시 특별한 성공음
+    this.playTone(523, 100, 'triangle', 0.06);  // C5
+    setTimeout(() => this.playTone(659, 100, 'triangle', 0.06), 110);  // E5
+    setTimeout(() => this.playTone(784, 100, 'triangle', 0.06), 220);  // G5
+    setTimeout(() => this.playTone(1047, 200, 'triangle', 0.08), 330); // C6
+  }
+  stageComplete() {
+    // 스테이지 완료 시 축하음
+    this.playTone(523, 80, 'triangle', 0.05);   // C5
+    setTimeout(() => this.playTone(659, 80, 'triangle', 0.05), 90);   // E5
+    setTimeout(() => this.playTone(784, 80, 'triangle', 0.05), 180);  // G5
+    setTimeout(() => this.playTone(1047, 80, 'triangle', 0.05), 270); // C6
+    setTimeout(() => this.playTone(1319, 300, 'triangle', 0.08), 360); // E6
   }
   logMount() {
-    // 통나무 탑승: 짧은 상승 이음
-    this.playTone(500, 50, 'triangle', 0.035);
-    setTimeout(() => this.playTone(650, 60, 'triangle', 0.035), 55);
+    // 통나무 탑승: 안전한 착지음
+    this.playTone(440, 60, 'triangle', 0.04);  // A4
+    setTimeout(() => this.playTone(554, 80, 'triangle', 0.04), 70);  // C#5
+  }
+  waterSplash() {
+    // 물에 빠질 때 물 튀는 소리
+    this.playTone(200, 150, 'sawtooth', 0.06);
+    setTimeout(() => this.playTone(150, 200, 'sawtooth', 0.06), 160);
   }
   startBgm() {
     if (this.muted || this.bgmActive) return;
@@ -547,6 +585,64 @@ async function showRankingPopup() {
 // 순위 팝업 닫기 함수
 function closeRankingPopup() {
   rankingPopup.classList.add('hidden');
+}
+
+// 게임 시작 전 순위 보기 함수
+async function showRankingBeforeStart() {
+  const overallRankings = await getOverallRankings();
+  
+  if (overallRankings.length === 0) {
+    alert('아직 저장된 점수가 없습니다.\n첫 번째 게임을 시작해보세요!');
+    return;
+  }
+
+  // 플레이어 설정 화면 숨기기
+  playerSetup.classList.add('hidden');
+  
+  // 순위 테이블 생성
+  const rankingTable = document.getElementById('rankingTable');
+  rankingTable.innerHTML = '';
+  
+  overallRankings.slice(0, 10).forEach((rank, index) => {
+    const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+    
+    const row = document.createElement('div');
+    row.className = 'ranking-row';
+    
+    row.innerHTML = `
+      <div class="rank-number">
+        <span class="rank-medal">${rankIcon}</span> ${index + 1}
+      </div>
+      <div class="player-name-cell">${rank.playerName}</div>
+      <div class="score-cell">${rank.totalScore}점</div>
+      <div class="games-cell">${rank.totalGames}회</div>
+      <div class="avg-cell">${rank.averageScore}점</div>
+    `;
+    
+    rankingTable.appendChild(row);
+  });
+  
+  // 플레이어 정보는 현재 플레이어가 없으므로 숨기기
+  document.querySelector('.player-info').style.display = 'none';
+  
+  // 헤더 텍스트 변경
+  document.querySelector('.ranking-header h2').textContent = '🏆 전체 순위';
+  
+  // 푸터 버튼 변경
+  const footer = document.querySelector('.ranking-footer');
+  footer.innerHTML = `
+    <button id="backToSetup" class="play-again-btn">🔙 돌아가기</button>
+  `;
+  
+  // 돌아가기 버튼 이벤트 리스너 추가
+  document.getElementById('backToSetup').addEventListener('click', () => {
+    rankingPopup.classList.add('hidden');
+    playerSetup.classList.remove('hidden');
+    playerNameInput.focus();
+  });
+  
+  // 팝업 표시
+  rankingPopup.classList.remove('hidden');
 }
 
 // 성적 조회 화면 표시 함수 (개선된 버전)
@@ -1117,6 +1213,7 @@ async function update(dt) {
       if (lane && Array.isArray(lane)) {
         for (const car of lane) {
           if (car && aabb(car.x, car.y, car.width, car.height, frog.x, frog.y, TILE * 0.35)) {
+            sound.carCrash(); // 차 충돌 효과음
             await frog.die();
             return;
           }
@@ -1158,6 +1255,7 @@ async function update(dt) {
     }
     if (!onLog) {
       frog.onLog = null; // 통나무 탑승 상태 초기화
+      sound.waterSplash(); // 물에 빠지는 효과음
       await frog.die();
       return;
     }
@@ -1178,13 +1276,13 @@ async function update(dt) {
       if (idx === correct) {
         gameState.score += 100;
         hud.score.textContent = gameState.score.toString();
-        sound.score();
+        sound.stageComplete(); // 스테이지 완료 효과음
         gameState.stage = 'day';
         hud.stage.textContent = '일 선택';
         // 레벨 변경 시 장애물 재초기화
         initializeLanes();
       } else {
-        sound.die();
+        sound.wrongSlot(); // 잘못된 슬롯 효과음
         await frog.die();
       }
       frog.reset();
@@ -1195,13 +1293,13 @@ async function update(dt) {
       if (idx === correct) {
         gameState.score += 200;
         hud.score.textContent = gameState.score.toString();
-        sound.score();
+        sound.stageComplete(); // 스테이지 완료 효과음
         gameState.stage = 'time';
         hud.stage.textContent = '시간 선택';
         // 레벨 변경 시 장애물 재초기화
         initializeLanes();
       } else {
-        sound.die();
+        sound.wrongSlot(); // 잘못된 슬롯 효과음
         await frog.die();
         frog.reset();
       }
@@ -1212,10 +1310,10 @@ async function update(dt) {
       if (idx === correct) {
         gameState.score += 500; // 시간 레벨은 더 많은 점수
         hud.score.textContent = gameState.score.toString();
-        sound.score();
+        sound.success(); // 게임 완전 클리어 효과음
         await gameClear();
       } else {
-        sound.die();
+        sound.wrongSlot(); // 잘못된 슬롯 효과음
         await frog.die();
         frog.reset();
       }
@@ -1441,6 +1539,7 @@ hud.playerStats.addEventListener('click', showPlayerStatsScreen);
 
 // 플레이어 설정 관련 이벤트 리스너
 startGameBtn.addEventListener('click', startGame);
+showRankingBeforeStartBtn.addEventListener('click', showRankingBeforeStart);
 
 // Enter 키로 게임 시작
 playerNameInput.addEventListener('keydown', (e) => {
