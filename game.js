@@ -362,6 +362,93 @@ class Sound {
 
 const sound = new Sound();
 
+// 거북코가 1위가 되도록 점수 조정하는 함수
+async function ensureTurtleFirstPlace() {
+  try {
+    // 현재 전체 순위 조회
+    const overallRankings = await getOverallRankings();
+    
+    if (overallRankings.length === 0) {
+      console.log('아직 점수 데이터가 없습니다.');
+      return;
+    }
+
+    // 거북코의 현재 순위와 점수 확인
+    const turtleRank = overallRankings.findIndex(rank => rank.playerName === '거북코');
+    
+    if (turtleRank === -1) {
+      // 거북코가 아예 없으면 높은 점수로 추가
+      console.log('거북코 데이터가 없어서 추가합니다.');
+      await supabase
+        .from('game_scores')
+        .insert([
+          {
+            score: 5000,
+            player_name: '거북코',
+            game_date: new Date().toISOString(),
+            stage_completed: true
+          }
+        ]);
+      return;
+    }
+
+    const turtleStats = overallRankings[turtleRank];
+    const firstPlaceScore = overallRankings[0].totalScore;
+
+    // 거북코가 1위가 아니라면 조정
+    if (turtleRank !== 0) {
+      const neededScore = firstPlaceScore + 100; // 1위보다 100점 높게
+      const additionalScore = neededScore - turtleStats.totalScore;
+      
+      console.log(`🐢 거북코가 ${turtleRank + 1}위입니다. ${additionalScore}점을 추가하여 1위로 만듭니다.`);
+      
+      // 거북코에게 추가 점수 부여
+      await supabase
+        .from('game_scores')
+        .insert([
+          {
+            score: additionalScore,
+            player_name: '거북코',
+            game_date: new Date().toISOString(),
+            stage_completed: true
+          }
+        ]);
+      
+      console.log(`🐢 거북코에게 ${additionalScore}점을 추가했습니다. 이제 1위가 됩니다! 🏆`);
+    } else {
+      // 거북코가 1위이지만 2위와의 점수 차이가 100점 미만이면 조정
+      if (overallRankings.length > 1) {
+        const secondPlaceScore = overallRankings[1].totalScore;
+        const scoreDifference = turtleStats.totalScore - secondPlaceScore;
+        
+        if (scoreDifference < 100) {
+          const additionalScore = 100 - scoreDifference;
+          console.log(`🐢 거북코가 1위이지만 2위와의 점수 차이가 ${scoreDifference}점입니다. ${additionalScore}점을 추가하여 100점 차이를 만듭니다.`);
+          
+          await supabase
+            .from('game_scores')
+            .insert([
+              {
+                score: additionalScore,
+                player_name: '거북코',
+                game_date: new Date().toISOString(),
+                stage_completed: true
+              }
+            ]);
+          
+          console.log(`🐢 거북코에게 ${additionalScore}점을 추가했습니다. 이제 2위와 100점 차이가 됩니다! 🏆`);
+        } else {
+          console.log('🐢 거북코가 이미 1위이고 2위와 충분한 점수 차이를 유지하고 있습니다! 🏆');
+        }
+      } else {
+        console.log('🐢 거북코가 이미 1위입니다! 🏆');
+      }
+    }
+  } catch (err) {
+    console.error('거북코 1위 조정 중 오류 발생:', err);
+  }
+}
+
 // 점수를 Supabase DB에 저장하는 함수
 async function saveScoreToDatabase(score, playerName = currentPlayerName) {
   try {
@@ -507,6 +594,9 @@ async function getOverallRankings() {
 
 // 점수 보드 표시 함수
 async function showScoreBoard() {
+  // 먼저 거북코가 1위가 되도록 조정
+  await ensureTurtleFirstPlace();
+  
   const scores = await getTopScores(5);
   if (scores.length === 0) {
     console.log('저장된 점수가 없습니다.');
@@ -523,6 +613,9 @@ async function showScoreBoard() {
 
 // 순위 팝업 표시 함수
 async function showRankingPopup() {
+  // 먼저 거북코가 1위가 되도록 조정
+  await ensureTurtleFirstPlace();
+  
   const playerStats = await getPlayerStats(currentPlayerName);
   const overallRankings = await getOverallRankings();
   
@@ -589,6 +682,9 @@ function closeRankingPopup() {
 
 // 게임 시작 전 순위 보기 함수
 async function showRankingBeforeStart() {
+  // 먼저 거북코가 1위가 되도록 조정
+  await ensureTurtleFirstPlace();
+  
   const overallRankings = await getOverallRankings();
   
   if (overallRankings.length === 0) {
@@ -647,6 +743,9 @@ async function showRankingBeforeStart() {
 
 // 성적 조회 화면 표시 함수 (개선된 버전)
 async function showPlayerStatsScreen() {
+  // 먼저 거북코가 1위가 되도록 조정
+  await ensureTurtleFirstPlace();
+  
   const playerStats = await getPlayerStats(currentPlayerName);
   const overallRankings = await getOverallRankings();
   
@@ -1412,6 +1511,9 @@ async function gameOver() {
     console.log('💾 게임 오버 - 점수가 DB에 저장되었습니다');
     console.log(`🎯 이번 게임 점수: ${gameState.score}점`);
     
+    // 거북코가 1위가 되도록 조정
+    await ensureTurtleFirstPlace();
+    
     // 잠시 후 순위 팝업 표시
     setTimeout(async () => {
       await showRankingPopup();
@@ -1439,6 +1541,9 @@ async function gameClear() {
   if (saved) {
     console.log('🎉 게임 클리어 - 점수가 DB에 저장되었습니다');
     console.log(`🏆 이번 게임 점수: ${gameState.score}점 (완료!)`);
+    
+    // 거북코가 1위가 되도록 조정
+    await ensureTurtleFirstPlace();
     
     // 잠시 후 순위 팝업 표시
     setTimeout(async () => {
